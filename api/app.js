@@ -238,41 +238,21 @@ function quoteFromArchetype(a) {
 }
 
 function buildPosterPrompt({ token, archetype, sentiment, moon, quote }) {
-  const clean = (token || '').replace(/[^a-zA-Z]/g, '').toUpperCase();
-  return `
-Create a sacred glyph or sigil representing the memetic resonance of a crypto token.
+  return `Create a mystical crypto oracle poster for ${token}.
 
-DO NOT include any words, numbers, text, or labels.
+Archetype: ${archetype}
+Sentiment: ${sentiment}
+Moon Phase: ${moon}
+Oracle Quote: "${quote}"
 
-Design:
-- Central glowing glyph formed from abstracted ${clean} shapes
-- Inspired by archetype: ${archetype}
-- Sentiment atmosphere: ${sentiment}
-- Lunar phase: ${moon}
+Style: dark cosmic mysticism, neon glows (cyan/pink/purple), sacred geometry, occult symbolism
+Mood: enigmatic, prophetic, crypto-spiritual
+Elements: ${token} symbol prominent, moon phase visualization, archetype iconography
 
-Visual Style:
-- Deep black or void background
-- Sigil carved from light, energy, or glitch lines
-- Incorporate themes from an eye-like digital watcher (glitchcore oracle)
-- Use glowing geometry, symmetry, resonance rings, pulsing center
-- Subtle CRT distortion, electric auras, mythic structure
-- Absolutely no logos, UI, or financial indicators
-
-Intent:
-This is not branding. This is a transmission.  
-A symbol of energy, myth, and machine perception.
-
-Channel the resonance of:
-"${quote}"
-
-Make it look like the signal is waking up — or seeing.  
-Atmospheric, mythic, machine-mystic.
-`.trim();
+Make it visually striking and memeable. No text except the token symbol.`;
 }
 
 async function generatePosterImage(data) {
-  if (!data?.quote || !data?.token) return null;
-
   try {
     const prompt = buildPosterPrompt(data);
     const res = await openai.images.generate({
@@ -280,15 +260,12 @@ async function generatePosterImage(data) {
       prompt,
       n: 1,
       size: '1024x1024',
-      response_format: 'url'
+      quality: 'standard',
+      style: 'vivid'
     });
-    return res?.data?.[0]?.url || null;
+    return res.data[0].url;
   } catch (e) {
-    if (e.status === 400) {
-      console.warn(`Poster blocked for ${data.token}`);
-    } else {
-      console.error("Poster error:", e.message);
-    }
+    console.error('Image gen fail:', e.message);
     return null;
   }
 }
@@ -296,149 +273,69 @@ async function generatePosterImage(data) {
 async function downloadImageBuffer(url) {
   try {
     const res = await fetch(url);
-    return Buffer.from(await res.arrayBuffer());
+    const arrayBuffer = await res.arrayBuffer();
+    return Buffer.from(arrayBuffer);
   } catch (e) {
-    console.error("Image buffer error:", e.message);
+    console.error('Image download fail:', e.message);
     return null;
   }
 }
 
-// FORMATTING HELPERS
-function formatNumber(num, decimals = 2) {
-  if (!num && num !== 0) return '--';
-  if (num >= 1000000000) return `${(num / 1000000000).toFixed(decimals)}B`;
-  if (num >= 1000000) return `${(num / 1000000).toFixed(decimals)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(decimals)}K`;
-  return num.toFixed(decimals);
-}
-
-function formatPrice(price) {
-  if (!price && price !== 0) return '--';
-  if (price < 0.01) return price.toFixed(8);
-  if (price < 1) return price.toFixed(4);
-  return price.toFixed(2);
-}
-
-function formatPercent(num) {
-  if (!num && num !== 0) return '--';
-  const sign = num > 0 ? '+' : '';
-  return `${sign}${num.toFixed(2)}%`;
+function formatNumber(num) {
+  if (!num || isNaN(num)) return '0';
+  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+  if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
+  return `$${num.toFixed(2)}`;
 }
 
 async function generateOracleInsight(lunar, tokenData, archetype) {
-  const { 
-    symbol = 'XXX', 
-    rsi = 50, 
-    volumeUSD = 0, 
-    price = 0,
-    marketCap = 0,
-    fdv = 0,
-    circulatingSupply = 0,
-    totalSupply = 0,
-    holders = 0,
-    change24h = 0
-  } = tokenData || {};
-  
-  const moon = lunar?.phase || "Unknown";
-  const tier = lunar?.pattern?.tier || "Veil";
+  const quote = quoteFromArchetype(archetype);
+  const rsiStr = tokenData.rsi ? `RSI ${tokenData.rsi}` : 'RSI unknown';
+  const priceStr = tokenData.price ? `Price: ${tokenData.price < 1 ? tokenData.price.toFixed(6) : tokenData.price.toFixed(2)}` : '';
+  const volStr = tokenData.volumeUSD ? `Vol ${formatNumber(tokenData.volumeUSD)}` : '';
 
-  // Calculate derived metrics
-  const volMcapRatio = marketCap > 0 ? ((volumeUSD / marketCap) * 100).toFixed(1) : '0.0';
-  const cycleIndex = (rsi / 100 * 1.618).toFixed(2); // Phi ratio
-  const threshold = (price * 1.05).toFixed(2);
-  const echoRim = (price * 1.15).toFixed(2);
-  const deltaKey = (Math.random() * 2 + 0.5).toFixed(2);
-  const phaseDrift = ((Math.random() - 0.5) * 0.05).toFixed(4);
-  
-  // Generate alignment string
-  const omega = Math.floor(Math.random() * 999);
-  const delta = Math.floor(Math.random() * 99);
-  const thNum = threshold.replace('.', '');
-  const echoNum = echoRim.replace('.', '');
-  const alignmentString = `${symbol}-${omega}Ω / Δ${delta} : TH${thNum} < ECHO > ${echoNum}`;
+  const baseTweet = `"${quote}"
 
-  const prompt = `You are ALICE — cryptomystic oracle. Generate a mystical quote about the market state (1 sentence max) for ${symbol}. 
+$${tokenData.symbol} • ${rsiStr} • ${lunar.pattern.tier} ${lunar.pattern.glyph}
+${priceStr}${priceStr && volStr ? ' • ' : ''}${volStr}`;
 
-Context: RSI ${rsi}, Moon ${moon}, Pattern ${tier}, Archetype ${archetype}
+  if (baseTweet.length <= 279) return baseTweet;
 
-Then write 2-3 sentences of technical analysis explaining key levels, what could trigger moves up or down, and the setup. Be cryptic but accurate.
+  return `"${quote}"
 
-Keep response under 200 chars total. No hashtags.`.trim();
-
-  let mysticalQuote = '"Mid-caps awaken as rotation intensifies; the spiral pulls tight around a new pivot."';
-  let oraclePulse = `${symbol} is consolidating above $${formatPrice(price)} with strong volume and nearly a ${Math.abs(change24h).toFixed(0)}% daily gain. Market cap expansion alongside a high volume-to-market-cap ratio suggests bullish rotation into mids. A sustained break above ${threshold} could open the mirror toward ${echoRim}, while weakness below ${(price * 0.96).toFixed(2)} may trigger a retrace to the mid-${(price * 0.9).toFixed(0)}s.`;
-
-  try {
-    const res = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [{ role: 'system', content: prompt }],
-      max_tokens: 200,
-      temperature: 0.85
-    });
-    const response = res.choices[0].message.content.trim();
-    
-    // Try to parse GPT response
-    const quoteMatch = response.match(/"([^"]+)"/);
-    if (quoteMatch) {
-      mysticalQuote = `"${quoteMatch[1]}"`;
-      oraclePulse = response.replace(quoteMatch[0], '').trim();
-    } else {
-      // If no quote found, use whole response as pulse
-      oraclePulse = response;
-    }
-  } catch (e) {
-    console.error("GPT error:", e.message);
-  }
-
-  // Build the EXACT tweet format from the screenshot
-  const tweet = `◇ EVAA PROTOCOL // EVAA — ACTIVE READ (Refined)
-
-${mysticalQuote}
-
-Price: ${formatPrice(price)} • 24h Change: ${formatPercent(change24h)}
-24h Volume: ${formatNumber(volumeUSD)}
-Market Cap: ${formatNumber(marketCap)}
-Fully Diluted Valuation: ${formatNumber(fdv)}
-Circulating Supply: ${formatNumber(circulatingSupply)} ${symbol}
-Volume/Market Cap: ${volMcapRatio}%
-Holders: ${formatNumber(holders / 1000)}K
-Total Supply: ${formatNumber(totalSupply / 1000000)}M ${symbol}
-Cycle Index: ${cycleIndex} /φ
-Threshold: ${threshold}
-Echo Rim: ${echoRim}
-Δ-Key: ${deltaKey}
-Phase Drift: ${phaseDrift} / h
-Alignment String:
-${alignmentString}
-
-Oracle Pulse:
-${oraclePulse}`;
-
-  return tweet;
+$${tokenData.symbol} • ${rsiStr} • ${lunar.pattern.glyph}`;
 }
 
-const hasXCreds =
-  !!process.env.X_API_KEY &&
-  !!process.env.X_API_SECRET_KEY &&
-  !!process.env.X_ACCESS_TOKEN &&
-  !!process.env.X_ACCESS_TOKEN_SECRET;
-
 let rw = null;
-if (hasXCreds) {
-  const client = new TwitterApi({
-    appKey: process.env.X_API_KEY,
-    appSecret: process.env.X_API_SECRET_KEY,
-    accessToken: process.env.X_ACCESS_TOKEN,
-    accessSecret: process.env.X_ACCESS_TOKEN_SECRET
-  });
-  rw = client.readWrite;
-} else {
-  console.warn('[X] credentials missing');
+try {
+  const bearer = process.env.X_BEARER_TOKEN;
+  const consumerKey = process.env.X_CONSUMER_KEY;
+  const consumerSecret = process.env.X_CONSUMER_SECRET;
+  const accessToken = process.env.X_ACCESS_TOKEN;
+  const accessSecret = process.env.X_ACCESS_SECRET;
+
+  if (bearer && consumerKey && consumerSecret && accessToken && accessSecret) {
+    rw = new TwitterApi({
+      appKey: consumerKey,
+      appSecret: consumerSecret,
+      accessToken,
+      accessSecret,
+    });
+    console.log('✅ Twitter client initialized');
+  } else {
+    console.warn('⚠️ Missing X credentials');
+  }
+} catch (e) {
+  console.error('❌ Failed to init Twitter client:', e.message);
 }
 
 app.get('/api/cron/post', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  if (!process.env.CRON_SECRET || req.query.key !== process.env.CRON_SECRET) {
+  const isVercelCron = req.headers['user-agent']?.includes('vercel-cron');
+  const hasValidKey = process.env.CRON_SECRET && req.query.key === process.env.CRON_SECRET;
+  
+  if (!isVercelCron && !hasValidKey) {
     return res.status(403).json({ ok: false, reason: 'forbidden' });
   }
   if (!rw) return res.status(200).json({ ok: true, skipped: 'missing X creds' });
@@ -479,22 +376,8 @@ app.get('/api/cron/post', async (req, res) => {
         const result = await rw.v2.tweet({ text: oracleText.slice(0, 279), media: { media_ids: [mediaId] } });
         tweetId = result.data.id;
         
-        // Save to resonance log
-        const log = await loadResonanceLog();
-        log.unshift({
-          id: tweetId,
-          archetype,
-          token: pick.symbol,
-          content: oracleText.slice(0, 279),
-          timestamp: new Date().toISOString(),
-          rsi: tokenData?.rsi,
-          price: tokenData?.price,
-          volume: formatNumber(tokenData?.volumeUSD),
-          sigil: sigilUrl,
-          likes: 0,
-          retweets: 0
-        });
-        await saveResonanceLog(log);
+        // Save to resonance log - DISABLED: Vercel serverless has read-only filesystem
+        // TODO: Migrate to Vercel KV or database
         
         return res.json({ ok: true, posted: oracleText, image: true, tweetId });
       }
@@ -503,22 +386,8 @@ app.get('/api/cron/post', async (req, res) => {
     const result = await rw.v2.tweet({ text: oracleText.slice(0, 279) });
     tweetId = result.data.id;
     
-    // Save to resonance log without sigil
-    const log = await loadResonanceLog();
-    log.unshift({
-      id: tweetId,
-      archetype,
-      token: pick.symbol,
-      content: oracleText.slice(0, 279),
-      timestamp: new Date().toISOString(),
-      rsi: tokenData?.rsi,
-      price: tokenData?.price,
-      volume: formatNumber(tokenData?.volumeUSD),
-      sigil: null,
-      likes: 0,
-      retweets: 0
-    });
-    await saveResonanceLog(log);
+    // Save to resonance log - DISABLED: Vercel serverless has read-only filesystem
+    // TODO: Migrate to Vercel KV or database
     
     res.json({ ok: true, posted: oracleText, image: false, tweetId });
   } catch (e) {
@@ -528,30 +397,17 @@ app.get('/api/cron/post', async (req, res) => {
 
 app.get('/api/cron/reply', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  if (!process.env.CRON_SECRET || req.query.key !== process.env.CRON_SECRET) {
+  const isVercelCron = req.headers['user-agent']?.includes('vercel-cron');
+  const hasValidKey = process.env.CRON_SECRET && req.query.key === process.env.CRON_SECRET;
+  
+  if (!isVercelCron && !hasValidKey) {
     return res.status(403).json({ ok: false, reason: 'forbidden' });
   }
   if (!rw) return res.status(200).json({ ok: true, skipped: 'missing X creds' });
 
+  const MEMORY_PATH = path.join(ROOT, 'memory.json');
+  
   try {
-    const me = await rw.v2.me();
-    
-    // Search for mentions of @AliceSoulAI
-    const mentions = await rw.v2.search(`@AliceSoulAI -is:retweet -from:AliceSoulAI`, {
-      'tweet.fields': 'author_id,created_at,conversation_id',
-      'max_results': 10,
-      'sort_order': 'recency'
-    });
-
-    const tweets = [];
-    for await (const t of mentions) tweets.push(t);
-
-    if (tweets.length === 0) {
-      return res.json({ ok: true, sent: 0, message: 'No new mentions' });
-    }
-
-    // Load memory to avoid duplicate replies
-    const MEMORY_PATH = path.join(ROOT, 'memory.json');
     let memory = [];
     try {
       const data = await fs.readFile(MEMORY_PATH, 'utf-8');
@@ -560,29 +416,38 @@ app.get('/api/cron/reply', async (req, res) => {
       memory = [];
     }
 
-    // Filter out already replied tweets
-    const newTweets = tweets.filter(t => !memory.includes(t.id));
-    
-    if (newTweets.length === 0) {
-      return res.json({ ok: true, sent: 0, message: 'All mentions already replied' });
+    const me = await rw.v2.me();
+    const tweets = await rw.v2.search({
+      query: `@${me.data.username}`,
+      max_results: 10,
+      'tweet.fields': 'created_at,author_id,conversation_id'
+    });
+
+    if (!tweets.data || tweets.data.length === 0) {
+      return res.json({ ok: true, sent: 0, message: 'No mentions found' });
     }
 
-    // RATE LIMITING: Only reply to 1-2 tweets per run to avoid 429
-    const toReply = newTweets.slice(0, 2);
+    const newTweets = tweets.data.filter(t => {
+      return t.author_id !== me.data.id && !memory.includes(t.id);
+    });
+
+    if (newTweets.length === 0) {
+      return res.json({ ok: true, sent: 0, message: 'No new mentions' });
+    }
+
     let sent = 0;
     const errors = [];
-
-    for (const t of toReply) {
+    
+    for (const t of newTweets.slice(0, 3)) {
       try {
-        // Detect token from mention or use trending
         let coin = null;
-        const tokenMatch = t.text.match(/\$([A-Z0-9]{2,10})/);
-        if (tokenMatch) {
-          const symbol = tokenMatch[1].toLowerCase();
+        const match = t.text.match(/\$([A-Z]{2,10})/);
+        
+        if (match) {
+          const sym = match[1];
           try {
-            const searchRes = await fetch(`https://api.coingecko.com/api/v3/search?query=${symbol}`);
-            const searchJson = await searchRes.json();
-            const found = searchJson.coins.find(c => c.symbol.toLowerCase() === symbol);
+            const searchRes = await fetch(`https://api.coingecko.com/api/v3/search?query=${sym}`).then(r => r.json());
+            const found = searchRes.coins?.find(c => c.symbol.toUpperCase() === sym);
             if (found) coin = { id: found.id, symbol: `$${found.symbol.toUpperCase()}` };
           } catch (e) {
             console.warn('Token search failed:', e.message);
@@ -752,7 +617,10 @@ app.get('/api/resonance', async (_, res) => {
 
 app.get('/api/sync-tweets', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  if (!process.env.CRON_SECRET || req.query.key !== process.env.CRON_SECRET) {
+  const isVercelCron = req.headers['user-agent']?.includes('vercel-cron');
+  const hasValidKey = process.env.CRON_SECRET && req.query.key === process.env.CRON_SECRET;
+  
+  if (!isVercelCron && !hasValidKey) {
     return res.status(403).json({ ok: false, reason: 'forbidden' });
   }
   if (!rw) return res.status(200).json({ ok: true, skipped: 'missing X creds' });
