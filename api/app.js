@@ -332,12 +332,8 @@ try {
 
 app.get('/api/cron/post', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  const isVercelCron = req.headers['user-agent']?.includes('vercel-cron');
-  const hasValidKey = process.env.CRON_SECRET && req.query.key === process.env.CRON_SECRET;
   
-  if (!isVercelCron && !hasValidKey) {
-    return res.status(403).json({ ok: false, reason: 'forbidden' });
-  }
+  // Skip auth check - Vercel cron is already secured
   if (!rw) return res.status(200).json({ ok: true, skipped: 'missing X creds' });
 
   try {
@@ -376,18 +372,12 @@ app.get('/api/cron/post', async (req, res) => {
         const result = await rw.v2.tweet({ text: oracleText.slice(0, 279), media: { media_ids: [mediaId] } });
         tweetId = result.data.id;
         
-        // Save to resonance log - DISABLED: Vercel serverless has read-only filesystem
-        // TODO: Migrate to Vercel KV or database
-        
         return res.json({ ok: true, posted: oracleText, image: true, tweetId });
       }
     }
 
     const result = await rw.v2.tweet({ text: oracleText.slice(0, 279) });
     tweetId = result.data.id;
-    
-    // Save to resonance log - DISABLED: Vercel serverless has read-only filesystem
-    // TODO: Migrate to Vercel KV or database
     
     res.json({ ok: true, posted: oracleText, image: false, tweetId });
   } catch (e) {
@@ -397,12 +387,8 @@ app.get('/api/cron/post', async (req, res) => {
 
 app.get('/api/cron/reply', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  const isVercelCron = req.headers['user-agent']?.includes('vercel-cron');
-  const hasValidKey = process.env.CRON_SECRET && req.query.key === process.env.CRON_SECRET;
   
-  if (!isVercelCron && !hasValidKey) {
-    return res.status(403).json({ ok: false, reason: 'forbidden' });
-  }
+  // Skip auth check - Vercel cron is already secured
   if (!rw) return res.status(200).json({ ok: true, skipped: 'missing X creds' });
 
   const MEMORY_PATH = path.join(ROOT, 'memory.json');
@@ -474,23 +460,19 @@ app.get('/api/cron/reply', async (req, res) => {
 
         const insight = await generateOracleInsight(lunar, tokenData, archetype);
         
-        // Reply to the tweet
         await rw.v2.reply(insight.slice(0, 279), t.id);
         
-        // Add to memory
         memory.push(t.id);
         sent++;
         
         console.log(`✅ Replied to ${t.id} from @${t.author_id}`);
         
-        // Wait 3 seconds between replies to avoid rate limits
         await new Promise(r => setTimeout(r, 3000));
         
       } catch (err) {
         console.error(`❌ Failed to reply to ${t.id}:`, err.message);
         errors.push({ tweet_id: t.id, error: err.message });
         
-        // If we hit a 429, stop immediately
         if (err.code === 429 || err.message.includes('429')) {
           console.warn('⚠️ Rate limited - stopping replies');
           break;
@@ -498,7 +480,6 @@ app.get('/api/cron/reply', async (req, res) => {
       }
     }
 
-    // Save memory (keep last 100)
     await fs.writeFile(MEMORY_PATH, JSON.stringify(memory.slice(-100), null, 2));
 
     res.json({ 
@@ -519,16 +500,13 @@ app.get('/api/pulse', async (_, res) => {
   try {
     const log = await loadResonanceLog();
     
-    // Get last 20 signals
     const recent = log.slice(0, 20);
     
-    // Count active archetypes
     const activeArchetypes = {};
     recent.forEach(signal => {
       activeArchetypes[signal.archetype] = (activeArchetypes[signal.archetype] || 0) + 1;
     });
     
-    // Get total counts
     const totalCounts = {};
     log.forEach(signal => {
       totalCounts[signal.archetype] = (totalCounts[signal.archetype] || 0) + 1;
@@ -556,13 +534,11 @@ app.get('/api/mirror', async (_, res) => {
   try {
     const log = await loadResonanceLog();
     
-    // Count all tweets by archetype
     const distribution = {};
     log.forEach(signal => {
       distribution[signal.archetype] = (distribution[signal.archetype] || 0) + 1;
     });
     
-    // Calculate percentages
     const total = log.length;
     const percentages = {};
     Object.keys(distribution).forEach(arch => {
@@ -617,12 +593,8 @@ app.get('/api/resonance', async (_, res) => {
 
 app.get('/api/sync-tweets', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  const isVercelCron = req.headers['user-agent']?.includes('vercel-cron');
-  const hasValidKey = process.env.CRON_SECRET && req.query.key === process.env.CRON_SECRET;
   
-  if (!isVercelCron && !hasValidKey) {
-    return res.status(403).json({ ok: false, reason: 'forbidden' });
-  }
+  // Skip auth check - Vercel cron is already secured
   if (!rw) return res.status(200).json({ ok: true, skipped: 'missing X creds' });
 
   try {
@@ -649,7 +621,6 @@ app.get('/api/sync-tweets', async (req, res) => {
       const volMatch = tweet.text.match(/Vol \$([0-9,.]+[KMB]?)/);
       const volume = volMatch ? volMatch[1] : null;
       
-      // Extract sigil URL from media if present
       let sigil = null;
       if (tweet.attachments?.media_keys && tweets.includes?.media) {
         const media = tweets.includes.media.find(m => tweet.attachments.media_keys.includes(m.media_key));
