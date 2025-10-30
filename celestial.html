@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>☀️ Celestial — ALICE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      margin:0; font-family:'Inter',sans-serif;
+      background:#000; color:#e8f4ff; min-height:100vh;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:2rem 1rem;
+    }
+    .container{max-width:800px; width:100%; text-align:center}
+    h1{
+      font:900 clamp(2rem,5vw,3rem) 'Orbitron';
+      background:linear-gradient(135deg, #ff77e9, #b84dff, #00f0ff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      margin-bottom:.5rem; text-shadow:0 0 40px #ff77e9;
+      animation:shimmer 4s linear infinite;
+    }
+    @keyframes shimmer{
+      0%{filter:hue-rotate(0deg)}
+      100%{filter:hue-rotate(360deg)}
+    }
+    .subtitle{color:#8899aa; font-size:1rem; margin-bottom:3rem}
+    
+    .kp-display{
+      background:rgba(255,119,233,.08); border:1px solid rgba(255,119,233,.3);
+      border-radius:24px; padding:3rem 2rem; margin-bottom:2rem;
+      box-shadow:0 0 60px rgba(255,119,233,.2); position:relative;
+      animation:float 6s ease-in-out infinite;
+    }
+    @keyframes float{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-10px)}
+    }
+    
+    .sun-icon{
+      font-size:6rem; margin-bottom:1rem;
+      filter:drop-shadow(0 0 20px #ff77e9);
+      animation:pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{transform:scale(1); opacity:.9}
+      50%{transform:scale(1.05); opacity:1}
+    }
+    
+    .kp-value{
+      font:900 4rem 'Orbitron'; color:#ff77e9; margin-bottom:.5rem;
+      text-shadow:0 0 30px #ff77e9, 0 0 50px #b84dff;
+    }
+    
+    .kp-state{
+      font:700 1.5rem 'Orbitron'; color:#00f0ff; margin-bottom:1.5rem;
+      text-shadow:0 0 15px #00f0ff;
+    }
+    
+    .kp-description{
+      font-size:1rem; color:#8899aa; line-height:1.6;
+      padding:1rem; background:rgba(0,0,0,.5); border-radius:12px;
+      margin-bottom:2rem;
+    }
+    
+    .alignment-section{
+      background:rgba(0,240,255,.08); border:1px solid rgba(0,240,255,.3);
+      border-radius:20px; padding:2rem; margin-bottom:2rem;
+    }
+    
+    .section-title{
+      font:800 1.5rem 'Orbitron'; color:#00f0ff;
+      margin-bottom:1.5rem; text-shadow:0 0 20px #00f0ff;
+    }
+    
+    .alignment-grid{
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+      gap:1rem;
+    }
+    
+    .alignment-card{
+      background:rgba(0,0,0,.5); border:1px solid rgba(0,240,255,.2);
+      border-radius:12px; padding:1rem;
+    }
+    
+    .card-label{
+      font:700 .9rem 'Orbitron'; color:#b84dff;
+      text-transform:uppercase; margin-bottom:.5rem;
+    }
+    
+    .card-value{
+      font-size:1.1rem; color:#e8f4ff;
+    }
+    
+    .timestamp{
+      font-size:.9rem; color:#8899aa; margin-top:1.5rem;
+      font-family:monospace;
+    }
+    
+    .nav{
+      display:flex; gap:1rem; flex-wrap:wrap; justify-content:center;
+      margin-top:2rem;
+    }
+    .nav-btn{
+      padding:.8rem 1.5rem; border-radius:999px; font:700 14px 'Orbitron';
+      background:rgba(255,119,233,.1); border:1px solid #ff77e9;
+      color:#ff77e9; text-decoration:none; transition:.2s;
+      box-shadow:0 0 10px rgba(255,119,233,.3);
+    }
+    .nav-btn:hover{
+      background:#ff77e9; color:#000;
+      box-shadow:0 0 25px #ff77e9;
+      transform:translateY(-2px);
+    }
+    
+    @media(max-width:768px){
+      .sun-icon{font-size:4rem}
+      .kp-value{font-size:3rem}
+      .alignment-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>☀️ Celestial Engine</h1>
+    <div class="subtitle">Real-time geomagnetic activity tracking</div>
+
+    <div class="kp-display">
+      <div class="sun-icon">☀️</div>
+      <div class="kp-value" id="kpValue">--</div>
+      <div class="kp-state" id="kpState">Loading...</div>
+      
+      <div class="kp-description">
+        The Kp index measures geomagnetic activity on a scale of 0-9. 
+        Higher values indicate stronger solar storms affecting Earth's magnetosphere, 
+        correlating with heightened collective tension and market volatility.
+      </div>
+      
+      <div class="timestamp" id="kpTime">As of --</div>
+    </div>
+
+    <div class="alignment-section">
+      <div class="section-title">Cosmic Alignment</div>
+      <div class="alignment-grid">
+        <div class="alignment-card">
+          <div class="card-label">Lunar Event</div>
+          <div class="card-value" id="lunarEvent">--</div>
+        </div>
+        <div class="alignment-card">
+          <div class="card-label">Pattern Effect</div>
+          <div class="card-value" id="patternEffect">--</div>
+        </div>
+        <div class="alignment-card">
+          <div class="card-label">Pattern Tier</div>
+          <div class="card-value" id="patternTier">--</div>
+        </div>
+        <div class="alignment-card">
+          <div class="card-label">Signal State</div>
+          <div class="card-value" id="signalState">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <a class="nav-btn" href="/">Home</a>
+      <a class="nav-btn" href="/pulse.html">Pulse</a>
+      <a class="nav-btn" href="/mirror.html">Mirror</a>
+      <a class="nav-btn" href="/lunar.html">Lunar</a>
+      <a class="nav-btn" href="/scrolls.html">Scrolls</a>
+    </div>
+  </div>
+
+  <script>
+    async function loadCelestialData() {
+      try {
+        const res = await fetch('/api/celestial');
+        const data = await res.json();
+
+        const kp = data?.kp?.realtime?.index || 0;
+        const state = data?.kp?.realtime?.state || 'Unknown';
+        const time = data?.kp?.realtime?.time || new Date();
+
+        document.getElementById('kpValue').textContent = kp.toFixed(2);
+        document.getElementById('kpState').textContent = state;
+        document.getElementById('kpTime').textContent = `As of ${new Date(time).toLocaleString()}`;
+
+        document.getElementById('lunarEvent').textContent = data?.alignment?.event || '--';
+        document.getElementById('patternEffect').textContent = data?.alignment?.effect || '--';
+        document.getElementById('patternTier').textContent = data?.alignment?.pattern?.tier || '--';
+        document.getElementById('signalState').textContent = data?.alignment?.pattern?.signal || '--';
+      } catch(e) {
+        console.error('Celestial data fetch failed:', e);
+        document.getElementById('kpState').textContent = 'Signal Offline';
+        document.getElementById('kpValue').textContent = '--';
+      }
+    }
+
+    loadCelestialData();
+    setInterval(loadCelestialData, 5 * 60 * 1000);
+  </script>
+</body>
+</html>

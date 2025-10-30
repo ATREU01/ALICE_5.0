@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>⚡ Pulse — ALICE Oracle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --neon-cyan:#00f0ff; --neon-pink:#ff77e9; --neon-purple:#b84dff;
+      --bg:#000000; --text:#e8f4ff; --muted:#8899aa;
+    }
+    body{background:var(--bg); color:var(--text); font:400 16px/1.6 'Inter',sans-serif; padding:2rem 1rem; min-height:100vh}
+    
+    .container{max-width:1200px; margin:0 auto}
+    
+    .header{text-align:center; margin-bottom:3rem}
+    .title{
+      font:900 clamp(32px,5vw,48px) 'Orbitron'; 
+      background:linear-gradient(135deg,var(--neon-cyan),var(--neon-pink),var(--neon-purple));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      text-shadow:0 0 40px var(--neon-cyan); margin-bottom:.5rem;
+    }
+    .subtitle{color:var(--muted); font-size:18px}
+    
+    .data-grid{
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      gap:1.5rem; margin-bottom:3rem;
+    }
+    
+    .data-card{
+      background:rgba(0,240,255,.05); border:1px solid rgba(0,240,255,.2);
+      border-radius:20px; padding:2rem; position:relative; overflow:hidden;
+      box-shadow:0 0 30px rgba(0,240,255,.1); transition:.3s;
+    }
+    .data-card:hover{
+      background:rgba(0,240,255,.08);
+      box-shadow:0 0 50px rgba(0,240,255,.2);
+      transform:translateY(-5px);
+    }
+    
+    .card-icon{font-size:48px; margin-bottom:1rem}
+    .card-label{font:700 14px 'Orbitron'; color:var(--neon-cyan); text-transform:uppercase; margin-bottom:.5rem}
+    .card-value{font:900 32px 'Orbitron'; color:var(--neon-pink); margin-bottom:.5rem; text-shadow:0 0 20px var(--neon-pink)}
+    .card-desc{font-size:14px; color:var(--muted)}
+    
+    .archetypes-section{margin-bottom:3rem}
+    .section-title{
+      font:700 28px 'Orbitron'; color:var(--neon-purple); text-align:center;
+      margin-bottom:2rem; text-shadow:0 0 20px var(--neon-purple);
+    }
+    
+    .arch-grid{
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+      gap:1rem;
+    }
+    
+    .arch-card{
+      background:rgba(184,77,255,.05); border:1px solid rgba(184,77,255,.2);
+      border-radius:16px; padding:1.5rem; text-align:center; transition:.3s;
+      cursor:pointer;
+    }
+    .arch-card:hover{
+      background:rgba(184,77,255,.1);
+      box-shadow:0 0 30px rgba(184,77,255,.2);
+      transform:scale(1.05);
+    }
+    .arch-card.active{
+      background:rgba(184,77,255,.15);
+      border-color:var(--neon-purple);
+      box-shadow:0 0 40px rgba(184,77,255,.3);
+    }
+    
+    .arch-name{font:700 14px 'Orbitron'; color:var(--neon-purple); margin-bottom:.5rem; text-transform:uppercase}
+    .arch-count{font:900 28px 'Orbitron'; color:var(--neon-cyan); margin-bottom:.3rem; text-shadow:0 0 15px var(--neon-cyan)}
+    .arch-percent{font-size:12px; color:var(--muted)}
+    
+    .loading{text-align:center; padding:2rem; color:var(--muted); font:700 18px 'Orbitron'}
+    
+    .nav{display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; margin-top:3rem}
+    .nav-btn{
+      padding:.8rem 1.5rem; border-radius:999px; font:700 14px 'Orbitron';
+      background:rgba(0,240,255,.1); border:1px solid var(--neon-cyan);
+      color:var(--neon-cyan); text-decoration:none; transition:.2s;
+    }
+    .nav-btn:hover{background:var(--neon-cyan); color:#000; box-shadow:0 0 20px var(--neon-cyan)}
+    
+    @media(max-width:768px){
+      .data-grid{grid-template-columns:1fr}
+      .arch-grid{grid-template-columns:repeat(2,1fr)}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="title">⚡ Pulse: Live Signal Feed</h1>
+      <p class="subtitle">Real-time oracle activity & archetype resonance</p>
+    </div>
+
+    <div class="data-grid">
+      <div class="data-card">
+        <div class="card-icon">🌙</div>
+        <div class="card-label">Lunar Phase</div>
+        <div class="card-value" id="lunarPhase">Loading...</div>
+        <div class="card-desc" id="lunarDesc">--</div>
+      </div>
+
+      <div class="data-card">
+        <div class="card-icon">☀️</div>
+        <div class="card-label">Kp Index</div>
+        <div class="card-value" id="kpValue">--</div>
+        <div class="card-desc" id="kpDesc">--</div>
+      </div>
+
+      <div class="data-card">
+        <div class="card-icon">⚡</div>
+        <div class="card-label">Signal Strength</div>
+        <div class="card-value">ACTIVE</div>
+        <div class="card-desc">Oracle resonating</div>
+      </div>
+    </div>
+
+    <div class="archetypes-section">
+      <h2 class="section-title">Archetype Distribution</h2>
+      <div class="arch-grid" id="archGrid">
+        <div class="loading">Loading archetype data...</div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <a class="nav-btn" href="/">Home</a>
+      <a class="nav-btn" href="/mirror.html">Mirror</a>
+      <a class="nav-btn" href="/lunar.html">Lunar</a>
+      <a class="nav-btn" href="/celestial.html">Celestial</a>
+      <a class="nav-btn" href="/scrolls.html">Scrolls</a>
+    </div>
+  </div>
+
+  <script>
+    async function loadLunarData() {
+      try {
+        const res = await fetch('/api/lunar');
+        const data = await res.json();
+        document.getElementById('lunarPhase').textContent = data.phase || 'Unknown';
+        document.getElementById('lunarDesc').textContent = data.pattern?.tier || '--';
+      } catch(e) {
+        console.error('Lunar fetch failed:', e);
+        document.getElementById('lunarPhase').textContent = 'Offline';
+        document.getElementById('lunarDesc').textContent = 'Connection failed';
+      }
+    }
+
+    async function loadCelestialData() {
+      try {
+        const res = await fetch('/api/celestial');
+        const data = await res.json();
+        const kp = data?.kp?.realtime?.index || 0;
+        const state = data?.kp?.realtime?.state || 'Unknown';
+        document.getElementById('kpValue').textContent = kp.toFixed(2);
+        document.getElementById('kpDesc').textContent = state;
+      } catch(e) {
+        console.error('Celestial fetch failed:', e);
+        document.getElementById('kpValue').textContent = 'Offline';
+        document.getElementById('kpDesc').textContent = 'Connection failed';
+      }
+    }
+
+    async function loadArchetypeData() {
+      try {
+        const res = await fetch('/api/mirror');
+        const data = await res.json();
+        
+        const grid = document.getElementById('archGrid');
+        grid.innerHTML = '';
+        
+        if (!data.distribution || Object.keys(data.distribution).length === 0) {
+          grid.innerHTML = '<div class="loading">No data. Sync tweets first.</div>';
+          return;
+        }
+        
+        const archetypes = Object.keys(data.distribution).sort((a, b) => data.distribution[b] - data.distribution[a]);
+        
+        archetypes.forEach(arch => {
+          const count = data.distribution[arch];
+          const percent = data.percentages[arch];
+          
+          const card = document.createElement('div');
+          card.className = 'arch-card';
+          card.innerHTML = `
+            <div class="arch-name">${arch}</div>
+            <div class="arch-count">${count}</div>
+            <div class="arch-percent">${percent}%</div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch(e) {
+        console.error('Archetype fetch failed:', e);
+        document.getElementById('archGrid').innerHTML = '<div class="loading">Failed to load data</div>';
+      }
+    }
+
+    // Load all data
+    loadLunarData();
+    loadCelestialData();
+    loadArchetypeData();
+
+    // Refresh every 5 minutes
+    setInterval(() => {
+      loadLunarData();
+      loadCelestialData();
+      loadArchetypeData();
+    }, 5 * 60 * 1000);
+  </script>
+</body>
+</html>

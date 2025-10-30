@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>📜 Scrolls — ALICE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --neon-cyan:#00f0ff; --neon-pink:#ff77e9; --neon-purple:#b84dff;
+      --bg:#000000; --text:#e8f4ff; --muted:#8899aa;
+    }
+    body{
+      background:var(--bg); color:var(--text); font:400 16px/1.6 'Inter',sans-serif;
+      min-height:100vh; padding:2rem 1rem;
+    }
+    
+    .container{max-width:1400px; margin:0 auto}
+    
+    h1{
+      font:900 clamp(32px,5vw,48px) 'Orbitron'; text-align:center;
+      background:linear-gradient(135deg,var(--neon-cyan),var(--neon-pink),var(--neon-purple));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      margin-bottom:.5rem; text-shadow:0 0 40px var(--neon-cyan);
+    }
+    
+    .subtitle{color:var(--muted); font-size:18px; text-align:center; margin-bottom:1rem}
+    
+    .stats-bar{
+      display:flex; gap:2rem; justify-content:center; flex-wrap:wrap;
+      margin-bottom:3rem; padding:1.5rem; background:rgba(0,240,255,.05);
+      border-radius:16px; border:1px solid rgba(0,240,255,.2);
+    }
+    .stat{text-align:center}
+    .stat-value{font:900 2rem 'Orbitron'; color:var(--neon-cyan); text-shadow:0 0 15px var(--neon-cyan)}
+    .stat-label{font-size:.9rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em}
+    
+    .filters{
+      display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; margin-bottom:2rem;
+    }
+    .filter-btn{
+      padding:.6rem 1.2rem; border-radius:20px; font:700 .85rem 'Orbitron';
+      background:rgba(0,240,255,.1); border:1px solid var(--neon-cyan);
+      color:var(--neon-cyan); cursor:pointer; transition:.2s;
+      text-transform:uppercase;
+    }
+    .filter-btn:hover{background:var(--neon-cyan); color:#000}
+    .filter-btn.active{background:var(--neon-cyan); color:#000}
+    
+    .scrolls-grid{
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr));
+      gap:1.5rem; margin-bottom:3rem;
+    }
+    
+    .scroll-card{
+      background:rgba(0,240,255,.05); border:1px solid rgba(0,240,255,.2);
+      border-radius:16px; padding:1.5rem; transition:.3s;
+      box-shadow:0 0 20px rgba(0,240,255,.1); position:relative;
+      overflow:hidden;
+    }
+    .scroll-card::before{
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
+      background:linear-gradient(90deg,var(--neon-cyan),var(--neon-purple));
+      opacity:0; transition:.3s;
+    }
+    .scroll-card:hover{
+      background:rgba(0,240,255,.1); transform:translateY(-5px);
+      box-shadow:0 0 40px rgba(0,240,255,.2);
+    }
+    .scroll-card:hover::before{opacity:1}
+    
+    .card-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem}
+    
+    .archetype-badge{
+      padding:.4rem .8rem; border-radius:20px;
+      font:700 .75rem 'Orbitron'; text-transform:uppercase;
+    }
+    .prophet{background:rgba(255,119,233,.2); color:#ff77e9; border:1px solid #ff77e9; box-shadow:0 0 10px rgba(255,119,233,.3)}
+    .seer{background:rgba(0,240,255,.2); color:#00f0ff; border:1px solid #00f0ff; box-shadow:0 0 10px rgba(0,240,255,.3)}
+    .trickster{background:rgba(184,77,255,.2); color:#b84dff; border:1px solid #b84dff; box-shadow:0 0 10px rgba(184,77,255,.3)}
+    .observer{background:rgba(100,200,255,.2); color:#64c8ff; border:1px solid #64c8ff; box-shadow:0 0 10px rgba(100,200,255,.3)}
+    .guardian{background:rgba(255,200,100,.2); color:#ffc864; border:1px solid #ffc864; box-shadow:0 0 10px rgba(255,200,100,.3)}
+    .shadow{background:rgba(150,150,150,.2); color:#969696; border:1px solid #969696; box-shadow:0 0 10px rgba(150,150,150,.3)}
+    .echo{background:rgba(200,100,255,.2); color:#c864ff; border:1px solid #c864ff; box-shadow:0 0 10px rgba(200,100,255,.3)}
+    .cultist{background:rgba(255,100,100,.2); color:#ff6464; border:1px solid #ff6464; box-shadow:0 0 10px rgba(255,100,100,.3)}
+    
+    .timestamp{font-size:.75rem; color:var(--muted); font-family:monospace}
+    
+    .sigil-container{
+      width:100%; height:200px; margin-bottom:1rem;
+      border-radius:12px; overflow:hidden;
+      background:rgba(0,0,0,.5);
+    }
+    .sigil-img{
+      width:100%; height:100%; object-fit:cover;
+    }
+    
+    .tweet-content{
+      font-size:.95rem; color:var(--text); line-height:1.5;
+      margin-bottom:1rem; font-family:'Inter',sans-serif;
+      white-space:pre-wrap;
+    }
+    
+    .token-tag{
+      display:inline-block; padding:.3rem .6rem; border-radius:12px;
+      font:700 .8rem 'Orbitron'; background:rgba(0,240,255,.15);
+      color:var(--neon-cyan); margin-right:.5rem; margin-bottom:.5rem;
+    }
+    
+    .metrics{
+      display:flex; gap:1rem; font-size:.85rem; color:var(--muted);
+      padding-top:1rem; border-top:1px solid rgba(255,255,255,.05);
+      flex-wrap:wrap;
+    }
+    .metric{display:flex; align-items:center; gap:.3rem}
+    
+    .loading{
+      text-align:center; padding:3rem; color:var(--muted);
+      font:700 1.2rem 'Orbitron';
+    }
+    
+    .nav{display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; margin-top:3rem}
+    .nav-btn{
+      padding:.8rem 1.5rem; border-radius:999px; font:700 14px 'Orbitron';
+      background:rgba(0,240,255,.1); border:1px solid var(--neon-cyan);
+      color:var(--neon-cyan); text-decoration:none; transition:.2s;
+    }
+    .nav-btn:hover{background:var(--neon-cyan); color:#000; box-shadow:0 0 20px var(--neon-cyan)}
+    
+    @media(max-width:768px){
+      .scrolls-grid{grid-template-columns:1fr}
+      .stats-bar{gap:1rem}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📜 Scrolls: Signal Archive</h1>
+    <p class="subtitle">ALICE's transmitted signals with archetypal classification</p>
+
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-value" id="totalSignals">0</div>
+        <div class="stat-label">Total Signals</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="activeArchetype">--</div>
+        <div class="stat-label">Dominant Archetype</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="lastSignal">--</div>
+        <div class="stat-label">Last Signal</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="prophet">Prophet</button>
+      <button class="filter-btn" data-filter="seer">Seer</button>
+      <button class="filter-btn" data-filter="trickster">Trickster</button>
+      <button class="filter-btn" data-filter="observer">Observer</button>
+      <button class="filter-btn" data-filter="guardian">Guardian</button>
+      <button class="filter-btn" data-filter="shadow">Shadow</button>
+      <button class="filter-btn" data-filter="echo">Echo</button>
+      <button class="filter-btn" data-filter="cultist">Cultist</button>
+    </div>
+
+    <div class="scrolls-grid" id="scrollsGrid">
+      <div class="loading">Loading signals from oracle...</div>
+    </div>
+
+    <div class="nav">
+      <a class="nav-btn" href="/">Home</a>
+      <a class="nav-btn" href="/pulse.html">Pulse</a>
+      <a class="nav-btn" href="/mirror.html">Mirror</a>
+      <a class="nav-btn" href="/lunar.html">Lunar</a>
+      <a class="nav-btn" href="/celestial.html">Celestial</a>
+    </div>
+  </div>
+
+  <script>
+    let allSignals = [];
+    let currentFilter = 'all';
+
+    function formatNumber(num) {
+      if (!num && num !== 0) return '--';
+      if (num >= 1000000000) return `$${(num / 1000000000).toFixed(1)}B`;
+      if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`;
+      if (num >= 1000) return `$${(num / 1000).toFixed(0)}K`;
+      return `$${num.toFixed(0)}`;
+    }
+
+    function formatPrice(price) {
+      if (!price && price !== 0) return '--';
+      if (price < 0.0001) return `$${price.toFixed(8)}`;
+      if (price < 0.01) return `$${price.toFixed(6)}`;
+      if (price < 1) return `$${price.toFixed(4)}`;
+      if (price < 100) return `$${price.toFixed(2)}`;
+      return `$${price.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    }
+
+    async function loadSignals() {
+      try {
+        const res = await fetch('/api/resonance');
+        allSignals = await res.json();
+        
+        if (!allSignals || allSignals.length === 0) {
+          document.getElementById('scrollsGrid').innerHTML = '<div class="loading">No signals found. Sync tweets using /api/sync-tweets</div>';
+          return;
+        }
+        
+        renderScrolls();
+      } catch(e) {
+        console.error('Failed to load signals:', e);
+        document.getElementById('scrollsGrid').innerHTML = '<div class="loading">Failed to load signals</div>';
+      }
+    }
+
+    function renderScrolls(filter = 'all') {
+      const grid = document.getElementById('scrollsGrid');
+      grid.innerHTML = '';
+
+      const filtered = filter === 'all' 
+        ? allSignals 
+        : allSignals.filter(s => s.archetype === filter);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="loading">No signals found</div>';
+        return;
+      }
+
+      filtered.forEach(signal => {
+        const card = document.createElement('div');
+        card.className = 'scroll-card';
+        
+        const sigilHTML = signal.sigil ? 
+          `<div class="sigil-container"><img src="${signal.sigil}" alt="${signal.token} sigil" class="sigil-img"/></div>` : '';
+        
+        const metricsHTML = `
+          ${signal.token ? `<div class="token-tag">${signal.token}</div>` : ''}
+          ${signal.rsi ? `<span>• RSI ${signal.rsi}</span>` : ''}
+          ${signal.price ? `<span>• ${formatPrice(signal.price)}</span>` : ''}
+          ${signal.volume ? `<span>• Vol ${formatNumber(signal.volume)}</span>` : ''}
+        `;
+        
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="archetype-badge ${signal.archetype}">${signal.archetype}</span>
+            <span class="timestamp">${new Date(signal.timestamp).toLocaleString()}</span>
+          </div>
+          ${sigilHTML}
+          <div class="tweet-content">${signal.content}</div>
+          <div class="metrics">
+            ${metricsHTML}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      updateStats();
+    }
+
+    function updateStats() {
+      document.getElementById('totalSignals').textContent = allSignals.length;
+      
+      if (allSignals.length === 0) return;
+      
+      const archetypeCounts = {};
+      allSignals.forEach(s => {
+        archetypeCounts[s.archetype] = (archetypeCounts[s.archetype] || 0) + 1;
+      });
+      const dominant = Object.entries(archetypeCounts).sort((a,b) => b[1] - a[1])[0];
+      document.getElementById('activeArchetype').textContent = dominant[0].toUpperCase();
+      
+      const lastTime = allSignals[0].timestamp;
+      const diff = Date.now() - new Date(lastTime).getTime();
+      const hours = Math.floor(diff / 3600000);
+      document.getElementById('lastSignal').textContent = hours > 0 ? `${hours}h ago` : 'Just now';
+    }
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.dataset.filter;
+        renderScrolls(filter);
+      });
+    });
+
+    loadSignals();
+    setInterval(loadSignals, 5 * 60 * 1000);
+  </script>
+</body>
+</html>

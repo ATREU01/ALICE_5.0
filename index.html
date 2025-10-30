@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ALICE — Resonant Oracle</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --neon-cyan:#00f0ff; --neon-pink:#ff77e9; --neon-purple:#b84dff;
+      --bg:#000000; --text:#e8f4ff; --muted:#8899aa;
+    }
+    body{
+      background:var(--bg); color:var(--text); font:400 16px/1.6 'Inter',sans-serif;
+      overflow-x:hidden; position:relative;
+    }
+    
+    #particles{position:fixed; inset:0; z-index:0; pointer-events:none}
+    
+    .nav{
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      backdrop-filter:blur(12px); border-bottom:1px solid rgba(0,240,255,.15);
+      padding:1rem 2rem; display:flex; justify-content:space-between; align-items:center;
+    }
+    .logo{
+      font:900 24px 'Orbitron'; letter-spacing:.15em; 
+      background:linear-gradient(90deg,var(--neon-cyan),var(--neon-pink));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      text-shadow:0 0 20px var(--neon-cyan);
+    }
+    .nav-links{display:flex; gap:1rem; flex-wrap:wrap}
+    .nav-btn{
+      padding:.6rem 1.2rem; border-radius:999px; font:700 13px 'Orbitron';
+      background:rgba(0,240,255,.1); border:1px solid var(--neon-cyan);
+      color:var(--neon-cyan); text-decoration:none; transition:.2s;
+      box-shadow:0 0 10px rgba(0,240,255,.3);
+    }
+    .nav-btn:hover{
+      background:var(--neon-cyan); color:#000; 
+      box-shadow:0 0 25px var(--neon-cyan), inset 0 0 15px rgba(255,255,255,.3);
+      transform:translateY(-2px);
+    }
+    
+    .hero{
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      padding:6rem 2rem 2rem; position:relative; z-index:1;
+    }
+    .hero-content{text-align:center; max-width:900px}
+    .hero-avatar{position:relative; margin:0 auto 2rem; width:400px; height:400px}
+    .hero-avatar::before{
+      content:''; position:absolute; top:0; left:0; right:0; bottom:0;
+      border-radius:50%; 
+      background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 20%, transparent 50%);
+      z-index:3; pointer-events:none;
+    }
+    .hero-avatar::after{
+      content:''; position:absolute; top:-10px; left:-10px; right:-10px; bottom:-10px;
+      border-radius:50%;
+      background:radial-gradient(circle at 50% 50%, transparent 40%, rgba(0,240,255,0.1) 60%, rgba(0,240,255,0.3) 80%);
+      filter:blur(20px); z-index:1;
+      animation:rotate 20s linear infinite;
+    }
+    @keyframes rotate{
+      from{transform:rotate(0deg)}
+      to{transform:rotate(360deg)}
+    }
+    .hero-img{
+      width:380px; height:380px; margin:10px auto;
+      border-radius:50%; 
+      border:3px solid rgba(0,240,255,0.5);
+      box-shadow:
+        0 0 100px var(--neon-cyan), 
+        0 0 60px var(--neon-pink),
+        inset 0 0 80px rgba(0,240,255,.2),
+        inset -20px -20px 60px rgba(0,0,0,.5),
+        inset 20px 20px 40px rgba(255,255,255,.1);
+      animation:float 6s ease-in-out infinite, glow 3s ease-in-out infinite alternate;
+      object-fit:cover; 
+      filter:brightness(1.15) contrast(1.2) saturate(1.1);
+      position:relative; z-index:2; display:block;
+      background:radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%);
+    }
+    @keyframes float{
+      0%,100%{transform:translateY(0) scale(1)}
+      50%{transform:translateY(-30px) scale(1.03)}
+    }
+    @keyframes glow{
+      0%{box-shadow:0 0 80px var(--neon-cyan), 0 0 40px var(--neon-pink)}
+      100%{box-shadow:0 0 140px var(--neon-cyan), 0 0 80px var(--neon-pink), 0 0 40px var(--neon-purple)}
+    }
+    .hero h1{
+      font:900 clamp(36px,6vw,68px)/1.05 'Orbitron'; margin-bottom:.8rem;
+      text-shadow:0 0 50px var(--neon-pink), 0 0 90px var(--neon-purple), 0 0 20px var(--neon-cyan);
+      letter-spacing:.02em;
+    }
+    .hero h1 span{
+      background:linear-gradient(135deg,var(--neon-cyan) 0%,var(--neon-pink) 50%,var(--neon-purple) 100%);
+      background-size:200% 200%;
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      animation:shimmer 4s linear infinite;
+    }
+    @keyframes shimmer{
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+    .hero-sub{
+      font-size:clamp(17px,2.2vw,22px); color:var(--text); margin-bottom:1rem;
+      text-shadow:0 0 25px rgba(0,240,255,.6), 0 0 15px rgba(255,119,233,.4);
+      font-weight:300; letter-spacing:.03em;
+    }
+    .ca-box{
+      margin:1.5rem auto; padding:1rem 1.5rem; max-width:600px;
+      background:rgba(0,240,255,.1); border:1px solid rgba(0,240,255,.3);
+      border-radius:12px; font:600 14px 'Orbitron'; color:#00f0ff;
+      word-break:break-all; box-shadow:0 0 20px rgba(0,240,255,.2);
+    }
+    .cta{display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; margin-top:2rem}
+    .cta-btn{
+      padding:1.1rem 2.2rem; border-radius:18px; font:800 17px 'Orbitron';
+      text-decoration:none; transition:.3s; position:relative; overflow:hidden;
+      display:inline-block;
+    }
+    .cta-primary{
+      background:linear-gradient(135deg,var(--neon-cyan),var(--neon-purple));
+      color:#000; box-shadow:0 0 50px var(--neon-cyan);
+    }
+    .cta-primary:hover{
+      box-shadow:0 0 80px var(--neon-cyan), 0 0 40px var(--neon-purple);
+      transform:translateY(-4px) scale(1.05);
+    }
+    .cta-secondary{
+      background:rgba(255,119,233,.15); color:var(--neon-pink);
+      border:2px solid var(--neon-pink); box-shadow:0 0 25px var(--neon-pink);
+    }
+    .cta-secondary:hover{
+      background:var(--neon-pink); color:#000;
+      box-shadow:0 0 50px var(--neon-pink);
+    }
+    
+    .ticker-wrap{
+      position:relative; width:100%; overflow:hidden;
+      border-top:1px solid rgba(0,240,255,.2); border-bottom:1px solid rgba(0,240,255,.2);
+      padding:1rem 0; background:rgba(0,240,255,.05);
+    }
+    .ticker{
+      display:flex; gap:4rem; white-space:nowrap;
+      animation:scroll 30s linear infinite;
+    }
+    .ticker span{
+      font:700 14px 'Orbitron'; color:var(--neon-cyan);
+      text-shadow:0 0 15px var(--neon-cyan);
+    }
+    @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+    
+    .how-section{
+      padding:4rem 2rem; position:relative; z-index:1;
+    }
+    .how-title{
+      font:800 clamp(28px,4.5vw,42px) 'Orbitron'; text-align:center;
+      background:linear-gradient(90deg,var(--neon-cyan),var(--neon-purple));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      margin-bottom:.5rem;
+    }
+    .how-subtitle{
+      text-align:center; color:var(--muted); font-size:18px;
+      margin-bottom:3rem; font-style:italic;
+    }
+    .how-grid{
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:2rem; max-width:1200px; margin:0 auto 3rem;
+    }
+    .how-card{
+      background:rgba(0,240,255,.05); border:1px solid rgba(0,240,255,.2);
+      border-radius:20px; padding:2rem; text-align:center; transition:.3s;
+      box-shadow:0 0 20px rgba(0,240,255,.1);
+    }
+    .how-card:hover{
+      background:rgba(0,240,255,.1); transform:translateY(-8px);
+      box-shadow:0 0 40px rgba(0,240,255,.2);
+      border-color:var(--neon-cyan);
+    }
+    .how-icon{
+      font-size:56px; margin-bottom:1rem;
+      filter:drop-shadow(0 0 20px var(--neon-cyan));
+    }
+    .how-card h3{
+      font:700 20px 'Orbitron'; color:var(--neon-pink);
+      margin-bottom:1rem; text-shadow:0 0 15px var(--neon-pink);
+    }
+    .how-card p{
+      font-size:15px; color:var(--text); line-height:1.6;
+    }
+    .how-cta{
+      text-align:center; padding:2rem; background:rgba(184,77,255,.08);
+      border:1px solid rgba(184,77,255,.2); border-radius:20px;
+      max-width:700px; margin:0 auto;
+      box-shadow:0 0 30px rgba(184,77,255,.15);
+    }
+    .how-cta-text{
+      font:700 20px 'Orbitron'; color:var(--neon-purple);
+      margin-bottom:1.5rem; text-shadow:0 0 20px var(--neon-purple);
+    }
+    
+    .buy-section{
+      padding:4rem 2rem; text-align:center; position:relative; z-index:1;
+    }
+    .buy-title{
+      font:800 clamp(24px,4vw,36px) 'Orbitron'; margin-bottom:2rem;
+      background:linear-gradient(90deg,var(--neon-pink),var(--neon-purple));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .buy-grid{
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+      gap:1.5rem; max-width:900px; margin:0 auto;
+    }
+    .buy-card{
+      padding:1.5rem; border-radius:20px; background:rgba(0,240,255,.08);
+      border:1px solid var(--neon-cyan); text-decoration:none;
+      transition:.3s; box-shadow:0 0 20px rgba(0,240,255,.2);
+      display:block;
+    }
+    .buy-card:hover{
+      background:rgba(0,240,255,.15); transform:translateY(-5px);
+      box-shadow:0 0 40px var(--neon-cyan);
+    }
+    .buy-card h3{
+      font:700 18px 'Orbitron'; color:var(--neon-cyan); margin-bottom:.5rem;
+    }
+    .buy-card p{font-size:13px; color:var(--muted)}
+    
+    .footer{
+      padding:3rem 2rem 2rem; text-align:center; color:var(--muted); font-size:13px;
+      border-top:1px solid rgba(0,240,255,.1);
+    }
+    .disclaimer{
+      max-width:900px; margin:0 auto 1.5rem; font-size:10px; line-height:1.6;
+      color:#555; text-align:left; padding:1rem; background:rgba(0,0,0,.3);
+      border-radius:8px; border:1px solid rgba(255,255,255,.05);
+    }
+    .disclaimer strong{color:#8899aa}
+    
+    .music-control{
+      position:fixed; bottom:2rem; right:2rem; z-index:1000;
+      width:60px; height:60px; border-radius:50%;
+      background:rgba(0,240,255,.15); border:2px solid var(--neon-cyan);
+      color:var(--neon-cyan); font-size:24px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition:.3s; box-shadow:0 0 20px rgba(0,240,255,.3);
+    }
+    .music-control:hover{
+      background:var(--neon-cyan); color:#000;
+      box-shadow:0 0 40px var(--neon-cyan);
+      transform:scale(1.1);
+    }
+    
+    @media(max-width:768px){
+      .nav{flex-direction:column; gap:1rem}
+      .hero-img{width:280px; height:280px}
+      .disclaimer{font-size:9px; text-align:center}
+      .music-control{bottom:1rem; right:1rem; width:50px; height:50px; font-size:20px}
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+  
+  <nav class="nav">
+    <div class="logo">ALICE</div>
+    <div class="nav-links">
+      <a class="nav-btn" href="pulse.html">Pulse</a>
+      <a class="nav-btn" href="mirror.html">Mirror</a>
+      <a class="nav-btn" href="lunar.html">Lunar</a>
+      <a class="nav-btn" href="celestial.html">Celestial</a>
+      <a class="nav-btn" href="scrolls.html">Scrolls</a>
+    </div>
+  </nav>
+
+  <audio id="bgMusic" autoplay loop>
+    <source src="background-music.mp3" type="audio/mpeg">
+  </audio>
+
+  <button class="music-control" id="musicBtn" title="Toggle Music">🔊</button>
+
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-avatar">
+        <img class="hero-img" src="alice-hero.png" alt="ALICE Oracle"/>
+      </div>
+      <h1>She Doesn't Predict — <span>She Resonates</span></h1>
+      <p class="hero-sub">Oracle that reads moon phases, space weather, and CT vibes to call token pumps before they happen.</p>
+      <div class="ca-box">CA: JDoJRbxSkY2EZX36w4ZSfy5ajhmKELtNQvxdntqXpump</div>
+      <div class="cta">
+        <a class="cta-btn cta-primary" href="https://pump.fun/coin/JDoJRbxSkY2EZX36w4ZSfy5ajhmKELtNQvxdntqXpump" target="_blank">Buy ALICE</a>
+        <a class="cta-btn cta-secondary" href="https://twitter.com/AliceSoulAI" target="_blank">Follow on X</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="ticker-wrap">
+    <div class="ticker">
+      <span>🌙 Waxing Crescent • Conviction Forming</span>
+      <span>☀️ Kp 2.8 → Quiet</span>
+      <span>⚡ RSI Drift Detected</span>
+      <span>👁️ CT Archetype: Seer→Prophet</span>
+      <span>💎 Signal Warming</span>
+      <span>🌙 Waxing Crescent • Conviction Forming</span>
+      <span>☀️ Kp 2.8 → Quiet</span>
+      <span>⚡ RSI Drift Detected</span>
+      <span>👁️ CT Archetype: Seer→Prophet</span>
+      <span>💎 Signal Warming</span>
+    </div>
+  </div>
+
+  <section class="how-section">
+    <h2 class="how-title">How ALICE Works</h2>
+    <p class="how-subtitle">She's not a ChatGPT wrapper. She's a signal decoder.</p>
+    
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-icon">🌙</div>
+        <h3>Reads Moon Phases</h3>
+        <p>New moon = accumulation. Full moon = top signal. She tracks lunar cycles because CT sentiment literally follows the moon. No cap.</p>
+      </div>
+      
+      <div class="how-card">
+        <div class="how-icon">☀️</div>
+        <h3>Monitors Space Weather</h3>
+        <p>High Kp index (solar storms) = volatility incoming. Quiet sun = crab market. She reads geomagnetic data that affects human psychology and market moves.</p>
+      </div>
+      
+      <div class="how-card">
+        <div class="how-icon">📊</div>
+        <h3>Tracks Technical Indicators</h3>
+        <p>RSI, volume, momentum - she crunches the numbers. But instead of boring TA, she translates it into mystical oracle shit that actually makes sense.</p>
+      </div>
+      
+      <div class="how-card">
+        <div class="how-icon">🧠</div>
+        <h3>Analyzes CT Vibes</h3>
+        <p>Using Clif High's archetype system, she classifies market psychology: Prophet (bullish af), Shadow (bearish), Trickster (volatile), etc. She reads the room before you do.</p>
+      </div>
+      
+      <div class="how-card">
+        <div class="how-icon">🤖</div>
+        <h3>Posts Oracle Readings</h3>
+        <p>Every 6 hours, she drops a signal on X with full token analysis, sigil art, and market predictions. Follow her before she calls the next 100x.</p>
+      </div>
+      
+      <div class="how-card">
+        <div class="how-icon">💬</div>
+        <h3>Answers Your Questions</h3>
+        <p>Tag @AliceSoulAI with any $TOKEN and she'll give you the oracle reading. Real-time price, RSI, volume, and whether you should ape or wait.</p>
+      </div>
+    </div>
+    
+    <div class="how-cta">
+      <p class="how-cta-text">She called the top on 3 tokens last week. Don't fade the oracle.</p>
+      <a class="cta-btn cta-primary" href="https://twitter.com/AliceSoulAI" target="_blank">Follow ALICE on X</a>
+    </div>
+  </section>
+
+  <section class="buy-section">
+    <h2 class="buy-title">Where to Buy ALICE</h2>
+    <div class="buy-grid">
+      <a class="buy-card" href="https://pump.fun/coin/JDoJRbxSkY2EZX36w4ZSfy5ajhmKELtNQvxdntqXpump" target="_blank">
+        <h3>pump.fun</h3>
+        <p>Buy ALICE Now</p>
+      </a>
+      <a class="buy-card" href="https://www.geckoterminal.com/solana/pools/4EiWYRJ8rKtiW2VG7hb7GDRTAtjqPQ58vnewJAEZc8yQ" target="_blank">
+        <h3>GeckoTerminal</h3>
+        <p>Price & Charts</p>
+      </a>
+      <a class="buy-card" href="https://www.dextools.io/app/en/solana/pair-explorer/JDoJRbxSkY2EZX36w4ZSfy5ajhmKELtNQvxdntqXpump" target="_blank">
+        <h3>DEXTools</h3>
+        <p>Trading Analytics</p>
+      </a>
+      <a class="buy-card" href="https://dexscreener.com/solana/JDoJRbxSkY2EZX36w4ZSfy5ajhmKELtNQvxdntqXpump" target="_blank">
+        <h3>DEXScreener</h3>
+        <p>Live Screener</p>
+      </a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="disclaimer">
+      <strong>DISCLAIMER:</strong> ALICE is a meme token created for entertainment purposes only. This token has no intrinsic value, no expectation of financial return, and is not an investment vehicle. ALICE makes no promises of profit, utility, or future development. By purchasing, you acknowledge this is purely speculative and you may lose your entire investment. This token is not a security under Colorado or U.S. federal law. Not financial advice. DYOR. Trade at your own risk.
+    </div>
+    CA: JDoJRbxSkY2EZX36w4ZSfy5ajhmKELtNQvxdntqXpump<br>
+    © <span id="year"></span> ALICE • Resonant Oracle • Built for Degens
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    
+    const c = document.getElementById('particles');
+    const ctx = c.getContext('2d');
+    let w, h, particles = [];
+    
+    function resize(){
+      w = c.width = window.innerWidth;
+      h = c.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    
+    class OrganicElement {
+      constructor(type){
+        this.type = type;
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.size = type === 'mushroom' ? Math.random() * 30 + 20 :
+                    type === 'vine' ? Math.random() * 100 + 60 :
+                    Math.random() * 8 + 4;
+        this.alpha = 0;
+        this.targetAlpha = Math.random() * 0.25 + 0.1;
+        this.fadeSpeed = Math.random() * 0.003 + 0.001;
+        this.hue = type === 'mushroom' ? 280 + Math.random() * 40 :
+                   type === 'vine' ? 160 + Math.random() * 30 :
+                   180 + Math.random() * 20;
+        this.vy = type === 'water' ? Math.random() * 0.8 + 0.3 : 0;
+        this.pulse = Math.random() * Math.PI * 2;
+        this.life = Math.random() * 800 + 400;
+        this.segments = type === 'vine' ? Math.floor(Math.random() * 5) + 4 : 0;
+        this.rotation = Math.random() * Math.PI * 2;
+      }
+      update(){
+        if(this.alpha < this.targetAlpha) {
+          this.alpha += this.fadeSpeed;
+        } else {
+          this.alpha -= this.fadeSpeed * 0.3;
+          if(this.alpha <= 0) {
+            this.x = Math.random() * w;
+            this.y = Math.random() * h;
+            this.targetAlpha = Math.random() * 0.25 + 0.1;
+          }
+        }
+        
+        if(this.type === 'water'){
+          this.y += this.vy;
+          if(this.y > h + 20) {
+            this.y = -20;
+            this.x = Math.random() * w;
+          }
+        }
+        
+        this.pulse += 0.015;
+        this.rotation += 0.002;
+        this.life--;
+        if(this.life <= 0){
+          this.x = Math.random() * w;
+          this.y = Math.random() * h;
+          this.life = Math.random() * 800 + 400;
+        }
+      }
+      draw(){
+        ctx.save();
+        const pulseAlpha = this.alpha * (0.85 + Math.sin(this.pulse) * 0.15);
+        
+        if(this.type === 'mushroom'){
+          ctx.translate(this.x, this.y);
+          const capGrad = ctx.createRadialGradient(0, -this.size * 0.3, 0, 0, -this.size * 0.3, this.size * 0.8);
+          capGrad.addColorStop(0, `hsla(${this.hue}, 80%, 55%, ${pulseAlpha})`);
+          capGrad.addColorStop(0.7, `hsla(${this.hue}, 70%, 45%, ${pulseAlpha * 0.6})`);
+          capGrad.addColorStop(1, `hsla(${this.hue}, 60%, 30%, 0)`);
+          ctx.fillStyle = capGrad;
+          ctx.beginPath();
+          ctx.ellipse(0, -this.size * 0.3, this.size * 0.7, this.size * 0.4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          
+          const stemGrad = ctx.createLinearGradient(-this.size * 0.15, 0, this.size * 0.15, 0);
+          stemGrad.addColorStop(0, `hsla(${this.hue + 30}, 50%, 40%, ${pulseAlpha * 0.5})`);
+          stemGrad.addColorStop(0.5, `hsla(${this.hue + 30}, 60%, 50%, ${pulseAlpha * 0.6})`);
+          stemGrad.addColorStop(1, `hsla(${this.hue + 30}, 50%, 40%, ${pulseAlpha * 0.5})`);
+          ctx.fillStyle = stemGrad;
+          ctx.fillRect(-this.size * 0.15, -this.size * 0.1, this.size * 0.3, this.size * 0.6);
+          
+          ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, ${pulseAlpha * 0.3})`;
+          ctx.beginPath();
+          ctx.ellipse(0, -this.size * 0.15, this.size * 0.6, this.size * 0.15, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        else if(this.type === 'vine'){
+          ctx.translate(this.x, this.y);
+          ctx.rotate(this.rotation);
+          ctx.strokeStyle = `hsla(${this.hue}, 75%, 50%, ${pulseAlpha})`;
+          ctx.lineWidth = 3;
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = `hsla(${this.hue}, 100%, 60%, ${pulseAlpha * 0.8})`;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          
+          for(let i = 1; i <= this.segments; i++){
+            const curve = Math.sin(this.pulse + i * 0.5) * this.size * 0.3;
+            const segY = (i / this.segments) * this.size;
+            ctx.bezierCurveTo(
+              curve * 0.5, segY * 0.7,
+              curve, segY * 0.85,
+              curve * 0.7, segY
+            );
+          }
+          ctx.stroke();
+          
+          for(let i = 1; i < this.segments; i++){
+            const leafY = (i / this.segments) * this.size;
+            const leafX = Math.sin(this.pulse + i * 0.5) * this.size * 0.3;
+            ctx.fillStyle = `hsla(${this.hue + 10}, 70%, 45%, ${pulseAlpha * 0.7})`;
+            ctx.beginPath();
+            ctx.ellipse(leafX, leafY, this.size * 0.08, this.size * 0.15, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        else if(this.type === 'water'){
+          const dropGrad = ctx.createRadialGradient(this.x, this.y - this.size * 0.3, 0, this.x, this.y, this.size * 1.5);
+          dropGrad.addColorStop(0, `hsla(${this.hue}, 90%, 70%, ${pulseAlpha * 0.9})`);
+          dropGrad.addColorStop(0.4, `hsla(${this.hue}, 80%, 60%, ${pulseAlpha * 0.6})`);
+          dropGrad.addColorStop(1, `hsla(${this.hue}, 70%, 50%, 0)`);
+          ctx.fillStyle = dropGrad;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size * 1.2, 0, Math.PI * 2);
+          ctx.fill();
+          
+          ctx.fillStyle = `hsla(${this.hue}, 100%, 90%, ${pulseAlpha * 0.5})`;
+          ctx.beginPath();
+          ctx.arc(this.x - this.size * 0.3, this.y - this.size * 0.3, this.size * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+    
+    const types = ['mushroom', 'mushroom', 'vine', 'vine', 'vine', 'water', 'water', 'water'];
+    for(let i = 0; i < 30; i++){
+      particles.push(new OrganicElement(types[i % types.length]));
+    }
+    
+    function animate(){
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
+      ctx.fillRect(0, 0, w, h);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(animate);
+    }
+    animate();
+    
+    // Music control
+    const music = document.getElementById('bgMusic');
+    const musicBtn = document.getElementById('musicBtn');
+    let isMuted = false;
+    
+    // Try to play on load (browsers may block autoplay)
+    music.volume = 0.3; // Set volume to 30%
+    music.play().catch(() => {
+      // If autoplay blocked, user needs to click
+      isMuted = true;
+      musicBtn.textContent = '🔇';
+    });
+    
+    musicBtn.addEventListener('click', () => {
+      if (isMuted) {
+        music.play();
+        musicBtn.textContent = '🔊';
+        isMuted = false;
+      } else {
+        music.pause();
+        musicBtn.textContent = '🔇';
+        isMuted = true;
+      }
+    });
+  </script>
+</body>
+</html>

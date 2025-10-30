@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>☾ Lunar — ALICE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      margin:0; font-family:'Inter',sans-serif;
+      background:#000; color:#e8f4ff; min-height:100vh;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:2rem 1rem;
+    }
+    .container{max-width:600px; width:100%; text-align:center}
+    h1{
+      font:900 clamp(2rem,5vw,3rem) 'Orbitron';
+      background:linear-gradient(135deg, #00f0ff, #ff77e9, #b84dff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      margin-bottom:.5rem; text-shadow:0 0 40px #00f0ff;
+      animation:shimmer 4s linear infinite;
+    }
+    @keyframes shimmer{
+      0%{filter:hue-rotate(0deg)}
+      100%{filter:hue-rotate(360deg)}
+    }
+    .subtitle{color:#8899aa; font-size:1rem; margin-bottom:3rem}
+    
+    .moon-display{
+      background:rgba(0,240,255,.08); border:1px solid rgba(0,240,255,.3);
+      border-radius:24px; padding:3rem 2rem; margin-bottom:2rem;
+      box-shadow:0 0 60px rgba(0,240,255,.2); position:relative;
+      animation:float 6s ease-in-out infinite;
+    }
+    @keyframes float{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-10px)}
+    }
+    
+    .moon-icon{
+      font-size:6rem; margin-bottom:1rem;
+      filter:drop-shadow(0 0 20px #00f0ff);
+      animation:pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{transform:scale(1); opacity:.9}
+      50%{transform:scale(1.05); opacity:1}
+    }
+    
+    .phase-name{
+      font:700 2rem 'Orbitron'; color:#00f0ff; margin-bottom:.5rem;
+      text-shadow:0 0 20px #00f0ff;
+    }
+    
+    .illumination{
+      font-size:1.2rem; color:#ff77e9; margin-bottom:1.5rem;
+      text-shadow:0 0 15px #ff77e9;
+    }
+    
+    .pattern-box{
+      background:rgba(184,77,255,.1); border:1px solid rgba(184,77,255,.3);
+      border-radius:16px; padding:1.5rem; margin-bottom:1.5rem;
+    }
+    
+    .glyph{
+      font-size:4rem; color:#b84dff; margin-bottom:.5rem;
+      animation:glyphPulse 2s ease-in-out infinite;
+    }
+    @keyframes glyphPulse{
+      0%,100%{text-shadow:0 0 20px #b84dff}
+      50%{text-shadow:0 0 40px #b84dff, 0 0 60px #ff77e9}
+    }
+    
+    .tier{
+      font:800 1.5rem 'Orbitron'; color:#b84dff;
+      text-transform:uppercase; letter-spacing:.1em; margin-bottom:.5rem;
+    }
+    
+    .signal{
+      font-size:1.1rem; color:#e8f4ff; line-height:1.6;
+    }
+    
+    .message{
+      font-size:1.2rem; color:#e8f4ff; line-height:1.6;
+      padding:1rem; background:rgba(0,0,0,.5); border-radius:12px;
+      border-left:3px solid #00f0ff;
+    }
+    
+    .timestamp{
+      font-size:.9rem; color:#8899aa; margin-top:1.5rem;
+      font-family:monospace;
+    }
+    
+    .nav{
+      display:flex; gap:1rem; flex-wrap:wrap; justify-content:center;
+      margin-top:2rem;
+    }
+    .nav-btn{
+      padding:.8rem 1.5rem; border-radius:999px; font:700 14px 'Orbitron';
+      background:rgba(0,240,255,.1); border:1px solid #00f0ff;
+      color:#00f0ff; text-decoration:none; transition:.2s;
+      box-shadow:0 0 10px rgba(0,240,255,.3);
+    }
+    .nav-btn:hover{
+      background:#00f0ff; color:#000;
+      box-shadow:0 0 25px #00f0ff;
+      transform:translateY(-2px);
+    }
+    
+    @media(max-width:768px){
+      .moon-icon{font-size:4rem}
+      .phase-name{font-size:1.5rem}
+      .glyph{font-size:3rem}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>☾ Lunar Engine</h1>
+    <div class="subtitle">Real-time moon phase tracking</div>
+
+    <div class="moon-display">
+      <div class="moon-icon" id="moonIcon">🌙</div>
+      <div class="phase-name" id="phaseName">Loading...</div>
+      <div class="illumination" id="illumination">--% Illuminated</div>
+
+      <div class="pattern-box">
+        <div class="glyph" id="glyph">⟡</div>
+        <div class="tier" id="tier">VEIL</div>
+        <div class="signal" id="signal">Signal loading...</div>
+      </div>
+
+      <div class="message" id="message">Awaiting lunar resonance...</div>
+      <div class="timestamp" id="timestamp">As of --</div>
+    </div>
+
+    <div class="nav">
+      <a class="nav-btn" href="/">Home</a>
+      <a class="nav-btn" href="/pulse.html">Pulse</a>
+      <a class="nav-btn" href="/mirror.html">Mirror</a>
+      <a class="nav-btn" href="/celestial.html">Celestial</a>
+      <a class="nav-btn" href="/scrolls.html">Scrolls</a>
+    </div>
+  </div>
+
+  <script>
+    const moonEmojis = {
+      "New Moon": "🌑",
+      "Waxing Crescent": "🌒",
+      "First Quarter": "🌓",
+      "Waxing Gibbous": "🌔",
+      "Full Moon": "🌕",
+      "Waning Gibbous": "🌖",
+      "Last Quarter": "🌗",
+      "Waning Crescent": "🌘"
+    };
+
+    async function loadLunarData() {
+      try {
+        const res = await fetch('/api/lunar');
+        const data = await res.json();
+
+        document.getElementById('moonIcon').textContent = moonEmojis[data.phase] || '🌙';
+        document.getElementById('phaseName').textContent = data.phase;
+        document.getElementById('illumination').textContent = `${data.illumination}% Illuminated`;
+        document.getElementById('glyph').textContent = data.pattern.glyph;
+        document.getElementById('tier').textContent = data.pattern.tier;
+        document.getElementById('signal').textContent = data.pattern.signal;
+        document.getElementById('message').textContent = data.message;
+        document.getElementById('timestamp').textContent = `As of ${new Date(data.time).toLocaleString()}`;
+      } catch(e) {
+        console.error('Lunar data fetch failed:', e);
+        document.getElementById('phaseName').textContent = 'Signal Offline';
+        document.getElementById('message').textContent = 'Unable to connect to lunar oracle.';
+      }
+    }
+
+    loadLunarData();
+    setInterval(loadLunarData, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
