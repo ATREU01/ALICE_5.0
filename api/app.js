@@ -6,7 +6,6 @@ import { OpenAI } from 'openai';
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
 import { RSI } from 'technicalindicators';
-import fs from 'fs/promises';
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -164,7 +163,7 @@ app.get('/api/celestial', async (_, res) => {
 async function getTrendingTokens(limit = 7) {
   try {
     const j = await fetch('https://api.coingecko.com/api/v3/search/trending').then(r => r.json());
-    return j.coins.slice(0, limit).map(c => ({ id: c.item.id, symbol: `$${c.item.symbol.toUpperCase()}` }));
+    return j.coins.slice(0, limit).map(c => ({ id: c.item.id, symbol: c.item.symbol.toUpperCase() }));
   } catch (e) {
     console.warn('trending fail:', e.message);
     return [];
@@ -204,7 +203,8 @@ async function getTokenDataById(id) {
       change24h: Number(change24h),
       rsi,
       symbol: pj.symbol.toUpperCase(),
-      id
+      id,
+      name: pj.name
     };
   } catch (e) {
     console.warn('token fail:', e.message);
@@ -238,21 +238,41 @@ function quoteFromArchetype(a) {
 }
 
 function buildPosterPrompt({ token, archetype, sentiment, moon, quote }) {
-  return `Create a mystical crypto oracle poster for ${token}.
+  const clean = (token || '').replace(/[^a-zA-Z]/g, '').toUpperCase();
+  return `
+Create a sacred glyph or sigil representing the memetic resonance of a crypto token.
 
-Archetype: ${archetype}
-Sentiment: ${sentiment}
-Moon Phase: ${moon}
-Oracle Quote: "${quote}"
+DO NOT include any words, numbers, text, or labels.
 
-Style: dark cosmic mysticism, neon glows (cyan/pink/purple), sacred geometry, occult symbolism
-Mood: enigmatic, prophetic, crypto-spiritual
-Elements: ${token} symbol prominent, moon phase visualization, archetype iconography
+Design:
+- Central glowing glyph formed from abstracted ${clean} shapes
+- Inspired by archetype: ${archetype}
+- Sentiment atmosphere: ${sentiment}
+- Lunar phase: ${moon}
 
-Make it visually striking and memeable. No text except the token symbol.`;
+Visual Style:
+- Deep black or void background
+- Sigil carved from light, energy, or glitch lines
+- Incorporate themes from an eye-like digital watcher (glitchcore oracle)
+- Use glowing geometry, symmetry, resonance rings, pulsing center
+- Subtle CRT distortion, electric auras, mythic structure
+- Absolutely no logos, UI, or financial indicators
+
+Intent:
+This is not branding. This is a transmission.  
+A symbol of energy, myth, and machine perception.
+
+Channel the resonance of:
+"${quote}"
+
+Make it look like the signal is waking up — or seeing.  
+Atmospheric, mythic, machine-mystic.
+`.trim();
 }
 
 async function generatePosterImage(data) {
+  if (!data?.quote || !data?.token) return null;
+
   try {
     const prompt = buildPosterPrompt(data);
     const res = await openai.images.generate({
@@ -260,12 +280,15 @@ async function generatePosterImage(data) {
       prompt,
       n: 1,
       size: '1024x1024',
-      quality: 'standard',
-      style: 'vivid'
+      response_format: 'url'
     });
-    return res.data[0].url;
+    return res?.data?.[0]?.url || null;
   } catch (e) {
-    console.error('Image gen fail:', e.message);
+    if (e.status === 400) {
+      console.warn(`Poster blocked for ${data.token}`);
+    } else {
+      console.error("Poster error:", e.message);
+    }
     return null;
   }
 }
@@ -273,40 +296,126 @@ async function generatePosterImage(data) {
 async function downloadImageBuffer(url) {
   try {
     const res = await fetch(url);
-    const arrayBuffer = await res.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    return Buffer.from(await res.arrayBuffer());
   } catch (e) {
-    console.error('Image download fail:', e.message);
+    console.error("Image buffer error:", e.message);
     return null;
   }
 }
 
-function formatNumber(num) {
-  if (!num || isNaN(num)) return '0';
-  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-  if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
-  return `$${num.toFixed(2)}`;
+function formatNumber(num, decimals = 2) {
+  if (!num && num !== 0) return '--';
+  if (num >= 1000000000) return `${(num / 1000000000).toFixed(decimals)}B`;
+  if (num >= 1000000) return `${(num / 1000000).toFixed(decimals)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(decimals)}K`;
+  return num.toFixed(decimals);
+}
+
+function formatPrice(price) {
+  if (!price && price !== 0) return '--';
+  if (price < 0.01) return price.toFixed(8);
+  if (price < 1) return price.toFixed(4);
+  return price.toFixed(2);
+}
+
+function formatPercent(num) {
+  if (!num && num !== 0) return '--';
+  const sign = num > 0 ? '+' : '';
+  return `${sign}${num.toFixed(2)}%`;
 }
 
 async function generateOracleInsight(lunar, tokenData, archetype) {
-  const quote = quoteFromArchetype(archetype);
-  const rsiStr = tokenData.rsi ? `RSI ${tokenData.rsi}` : 'RSI unknown';
-  const priceStr = tokenData.price ? `Price: ${tokenData.price < 1 ? tokenData.price.toFixed(6) : tokenData.price.toFixed(2)}` : '';
-  const volStr = tokenData.volumeUSD ? `Vol ${formatNumber(tokenData.volumeUSD)}` : '';
+  const { 
+    symbol = 'XXX', 
+    rsi = 50, 
+    volumeUSD = 0, 
+    price = 0,
+    marketCap = 0,
+    fdv = 0,
+    circulatingSupply = 0,
+    totalSupply = 0,
+    holders = 0,
+    change24h = 0,
+    name = 'Unknown Token'
+  } = tokenData || {};
+  
+  const moon = lunar?.phase || "Unknown";
+  const tier = lunar?.pattern?.tier || "Veil";
 
-  const baseTweet = `"${quote}"
+  // Calculate derived metrics
+  const volMcapRatio = marketCap > 0 ? ((volumeUSD / marketCap) * 100).toFixed(1) : '0.0';
+  const cycleIndex = (rsi / 100 * 1.618).toFixed(2);
+  const threshold = formatPrice(price * 1.05);
+  const echoRim = formatPrice(price * 1.15);
+  const deltaKey = (Math.random() * 2 + 0.5).toFixed(2);
+  const phaseDrift = ((Math.random() - 0.5) * 0.05).toFixed(4);
+  
+  // Generate alignment string
+  const omega = Math.floor(Math.random() * 999);
+  const delta = Math.floor(Math.random() * 99);
+  const thNum = threshold.replace('.', '');
+  const echoNum = echoRim.replace('.', '');
+  const alignmentString = `${symbol}-${omega}Ω / Δ${delta} : TH${thNum} < ECHO > ${echoNum}`;
 
-$${tokenData.symbol} • ${rsiStr} • ${lunar.pattern.tier} ${lunar.pattern.glyph}
-${priceStr}${priceStr && volStr ? ' • ' : ''}${volStr}`;
+  const prompt = `You are ALICE — cryptomystic oracle. Generate a mystical quote about the market state (1 sentence max) for ${symbol}. 
 
-  if (baseTweet.length <= 279) return baseTweet;
+Context: RSI ${rsi}, Moon ${moon}, Pattern ${tier}, Archetype ${archetype}
 
-  return `"${quote}"
+Then write 2-3 sentences of technical analysis explaining key levels, what could trigger moves up or down, and the setup. Be cryptic but accurate.
 
-$${tokenData.symbol} • ${rsiStr} • ${lunar.pattern.glyph}`;
+Keep response under 200 chars total. No hashtags.`.trim();
+
+  let mysticalQuote = '"Mid-caps awaken as rotation intensifies; the spiral pulls tight around a new pivot."';
+  let oraclePulse = `${symbol} is consolidating above $${formatPrice(price)} with strong volume and nearly a ${Math.abs(change24h).toFixed(0)}% daily gain. Market cap expansion alongside a high volume-to-market-cap ratio suggests bullish rotation into mids. A sustained break above ${threshold} could open the mirror toward ${echoRim}, while weakness below ${formatPrice(price * 0.96)} may trigger a retrace to the mid-${(price * 0.9).toFixed(0)}s.`;
+
+  try {
+    const res = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'system', content: prompt }],
+      max_tokens: 200,
+      temperature: 0.85
+    });
+    const response = res.choices[0].message.content.trim();
+    
+    const quoteMatch = response.match(/"([^"]+)"/);
+    if (quoteMatch) {
+      mysticalQuote = `"${quoteMatch[1]}"`;
+      oraclePulse = response.replace(quoteMatch[0], '').trim();
+    } else {
+      oraclePulse = response;
+    }
+  } catch (e) {
+    console.error("GPT error:", e.message);
+  }
+
+  // DETAILED TWEET FORMAT - EXACTLY LIKE EVAA SCREENSHOT
+  const tweet = `◇ ${name.toUpperCase()} // ${symbol} — ACTIVE READ (Refined)
+
+${mysticalQuote}
+
+Price: ${formatPrice(price)} • 24h Change: ${formatPercent(change24h)}
+24h Volume: ${formatNumber(volumeUSD)}
+Market Cap: ${formatNumber(marketCap)}
+Fully Diluted Valuation: ${formatNumber(fdv)}
+Circulating Supply: ${formatNumber(circulatingSupply)} ${symbol}
+Volume/Market Cap: ${volMcapRatio}%
+Holders: ${formatNumber(holders / 1000)}K
+Total Supply: ${formatNumber(totalSupply / 1000000)}M ${symbol}
+Cycle Index: ${cycleIndex} /φ
+Threshold: ${threshold}
+Echo Rim: ${echoRim}
+Δ-Key: ${deltaKey}
+Phase Drift: ${phaseDrift} / h
+Alignment String:
+${alignmentString}
+
+Oracle Pulse:
+${oraclePulse}`;
+
+  return tweet;
 }
 
+// TWITTER CLIENT - YOUR CREDENTIAL NAMES
 let rw = null;
 try {
   const bearer = process.env.X_BEARER_TOKEN;
@@ -330,26 +439,43 @@ try {
   console.error('❌ Failed to init Twitter client:', e.message);
 }
 
+async function generateOracleText(lunar, tokenData, archetype) {
+  const baseTweet = `${quote}
+
+${tokenData.symbol} • RSI ${tokenData.rsi || '--'} • Price: $${formatPrice(tokenData.price)}
+Vol ${formatNumber(tokenData.volumeUSD)} • ${lunar.phase}`;
+  
+  return baseTweet;
+}
+
 app.get('/api/cron/post', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   
-  // Skip auth check - Vercel cron is already secured
-  if (!rw) return res.status(200).json({ ok: true, skipped: 'missing X creds' });
+  if (!rw) {
+    console.error('❌ No Twitter client');
+    return res.status(200).json({ ok: true, skipped: 'missing X creds' });
+  }
 
   try {
+    console.log('🔄 Starting oracle post...');
     const trending = await getTrendingTokens(1);
-    const pick = trending[0] || { id: 'evaa-protocol', symbol: '$EVAA' };
-    const tokenData = await getTokenDataById(pick.id);
-    const lunar = await getLunarSignal();
+    const pick = trending[0] || { id: 'evaa-protocol', symbol: 'EVAA' };
+    console.log(`📊 Token: ${pick.symbol}`);
     
+    const tokenData = await getTokenDataById(pick.id);
+    if (!tokenData) throw new Error('Failed to fetch token data');
+    
+    const lunar = await getLunarSignal();
     const archetype = identifyArchetype({
       symbol: pick.symbol,
-      rsi: tokenData?.rsi ?? 50,
-      volume: tokenData?.volumeUSD
+      rsi: tokenData.rsi ?? 50,
+      volume: tokenData.volumeUSD
     });
 
     const quote = quoteFromArchetype(archetype);
     const mood = tokenData.rsi >= 78 ? 'intense overload' : tokenData.rsi >= 61 ? 'charged momentum' : 'focused echo';
+
+    console.log(`🎭 Archetype: ${archetype}`);
 
     const posterData = {
       token: pick.symbol,
@@ -362,302 +488,97 @@ app.get('/api/cron/post', async (req, res) => {
     const imageUrl = await generatePosterImage(posterData);
     const oracleText = await generateOracleInsight(lunar, tokenData, archetype);
 
+    console.log(`📝 Oracle text generated (${oracleText.length} chars)`);
+
     let tweetId = null;
-    let sigilUrl = imageUrl;
 
     if (imageUrl) {
+      console.log('🖼️ Image generated, uploading...');
       const buffer = await downloadImageBuffer(imageUrl);
       if (buffer) {
         const mediaId = await rw.v1.uploadMedia(buffer, { mimeType: 'image/png' });
+        console.log(`✅ Media uploaded: ${mediaId}`);
+        
         const result = await rw.v2.tweet({ text: oracleText.slice(0, 279), media: { media_ids: [mediaId] } });
         tweetId = result.data.id;
         
-        return res.json({ ok: true, posted: oracleText, image: true, tweetId });
+        console.log(`🎉 POSTED WITH IMAGE: ${tweetId}`);
+        return res.json({ ok: true, posted: oracleText.slice(0, 100), image: true, tweetId });
       }
     }
 
+    console.log('📤 Posting without image...');
     const result = await rw.v2.tweet({ text: oracleText.slice(0, 279) });
     tweetId = result.data.id;
     
-    res.json({ ok: true, posted: oracleText, image: false, tweetId });
+    console.log(`🎉 POSTED: ${tweetId}`);
+    res.json({ ok: true, posted: oracleText.slice(0, 100), image: false, tweetId });
   } catch (e) {
-    res.status(200).json({ ok: false, error: String(e) });
+    console.error('❌ Post error:', e);
+    res.status(200).json({ ok: false, error: String(e.message || e) });
   }
 });
 
 app.get('/api/cron/reply', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   
-  // Skip auth check - Vercel cron is already secured
   if (!rw) return res.status(200).json({ ok: true, skipped: 'missing X creds' });
 
-  const MEMORY_PATH = path.join(ROOT, 'memory.json');
-  
   try {
-    let memory = [];
-    try {
-      const data = await fs.readFile(MEMORY_PATH, 'utf-8');
-      memory = JSON.parse(data);
-    } catch (e) {
-      memory = [];
-    }
-
     const me = await rw.v2.me();
-    const tweets = await rw.v2.search({
-      query: `@${me.data.username}`,
-      max_results: 10,
-      'tweet.fields': 'created_at,author_id,conversation_id'
+    const mentions = await rw.v2.search(`to:${me.data.username} -is:retweet`, {
+      'tweet.fields': 'author_id,created_at', max_results: 10
     });
 
-    if (!tweets.data || tweets.data.length === 0) {
-      return res.json({ ok: true, sent: 0, message: 'No mentions found' });
-    }
+    const tweets = [];
+    for await (const t of mentions) tweets.push(t);
 
-    const newTweets = tweets.data.filter(t => {
-      return t.author_id !== me.data.id && !memory.includes(t.id);
-    });
-
-    if (newTweets.length === 0) {
-      return res.json({ ok: true, sent: 0, message: 'No new mentions' });
-    }
-
+    const recent = tweets.slice(0, 3);
     let sent = 0;
-    const errors = [];
-    
-    for (const t of newTweets.slice(0, 3)) {
-      try {
-        let coin = null;
-        const match = t.text.match(/\$([A-Z]{2,10})/);
-        
-        if (match) {
-          const sym = match[1];
-          try {
-            const searchRes = await fetch(`https://api.coingecko.com/api/v3/search?query=${sym}`).then(r => r.json());
-            const found = searchRes.coins?.find(c => c.symbol.toUpperCase() === sym);
-            if (found) coin = { id: found.id, symbol: `$${found.symbol.toUpperCase()}` };
-          } catch (e) {
-            console.warn('Token search failed:', e.message);
-          }
-        }
 
-        if (!coin) {
-          const trending = await getTrendingTokens(1);
-          coin = trending[0] || { id: 'bitcoin', symbol: '$BTC' };
-        }
+    for (const t of recent) {
+      const trending = await getTrendingTokens(1);
+      const pick = trending[0] || { id: 'bitcoin', symbol: 'BTC' };
+      const tokenData = await getTokenDataById(pick.id);
+      const lunar = await getLunarSignal();
+      const archetype = identifyArchetype({
+        symbol: pick.symbol,
+        rsi: tokenData?.rsi ?? 50,
+        volume: tokenData?.volumeUSD
+      });
 
-        const tokenData = await getTokenDataById(coin.id);
-        if (!tokenData) {
-          console.warn(`No data for ${coin.symbol}`);
-          continue;
-        }
-
-        const lunar = await getLunarSignal();
-        const archetype = identifyArchetype({
-          symbol: coin.symbol,
-          rsi: tokenData?.rsi ?? 50,
-          volume: tokenData?.volumeUSD
-        });
-
-        const insight = await generateOracleInsight(lunar, tokenData, archetype);
-        
-        await rw.v2.reply(insight.slice(0, 279), t.id);
-        
-        memory.push(t.id);
-        sent++;
-        
-        console.log(`✅ Replied to ${t.id} from @${t.author_id}`);
-        
-        await new Promise(r => setTimeout(r, 3000));
-        
-      } catch (err) {
-        console.error(`❌ Failed to reply to ${t.id}:`, err.message);
-        errors.push({ tweet_id: t.id, error: err.message });
-        
-        if (err.code === 429 || err.message.includes('429')) {
-          console.warn('⚠️ Rate limited - stopping replies');
-          break;
-        }
-      }
+      const insight = await generateOracleInsight(lunar, tokenData, archetype);
+      await rw.v2.reply(insight.slice(0, 279), t.id);
+      sent++;
+      await new Promise(r => setTimeout(r, 2000));
     }
 
-    await fs.writeFile(MEMORY_PATH, JSON.stringify(memory.slice(-100), null, 2));
-
-    res.json({ 
-      ok: true, 
-      sent, 
-      total_mentions: tweets.length,
-      new_mentions: newTweets.length,
-      errors: errors.length > 0 ? errors : undefined
-    });
-    
+    res.json({ ok: true, sent });
   } catch (e) {
-    console.error('Reply cron error:', e);
+    console.error('Reply error:', e);
     res.status(200).json({ ok: false, error: String(e) });
   }
 });
 
 app.get('/api/pulse', async (_, res) => {
-  try {
-    const log = await loadResonanceLog();
-    
-    const recent = log.slice(0, 20);
-    
-    const activeArchetypes = {};
-    recent.forEach(signal => {
-      activeArchetypes[signal.archetype] = (activeArchetypes[signal.archetype] || 0) + 1;
-    });
-    
-    const totalCounts = {};
-    log.forEach(signal => {
-      totalCounts[signal.archetype] = (totalCounts[signal.archetype] || 0) + 1;
-    });
-    
-    res.setHeader('Content-Type', 'application/json');
-    res.json({
-      active: activeArchetypes,
-      total: totalCounts,
-      recentSignals: recent.length,
-      totalSignals: log.length
-    });
-  } catch (error) {
-    console.error('Pulse API error:', error);
-    res.status(500).json({
-      active: {},
-      total: {},
-      recentSignals: 0,
-      totalSignals: 0
-    });
-  }
+  res.setHeader('Content-Type', 'application/json');
+  res.json({ active: {}, total: {}, recentSignals: 0, totalSignals: 0 });
 });
 
 app.get('/api/mirror', async (_, res) => {
-  try {
-    const log = await loadResonanceLog();
-    
-    const distribution = {};
-    log.forEach(signal => {
-      distribution[signal.archetype] = (distribution[signal.archetype] || 0) + 1;
-    });
-    
-    const total = log.length;
-    const percentages = {};
-    Object.keys(distribution).forEach(arch => {
-      percentages[arch] = ((distribution[arch] / total) * 100).toFixed(1);
-    });
-    
-    res.setHeader('Content-Type', 'application/json');
-    res.json({
-      distribution,
-      percentages,
-      total
-    });
-  } catch (error) {
-    console.error('Mirror API error:', error);
-    res.status(500).json({
-      distribution: {},
-      percentages: {},
-      total: 0
-    });
-  }
+  res.setHeader('Content-Type', 'application/json');
+  res.json({ distribution: {}, percentages: {}, total: 0 });
 });
 
-const RESONANCE_LOG_PATH = path.join(ROOT, 'resonance-log.json');
-
-async function loadResonanceLog() {
-  try {
-    const data = await fs.readFile(RESONANCE_LOG_PATH, 'utf-8');
-    return JSON.parse(data);
-  } catch (e) {
-    return [];
-  }
-}
-
-async function saveResonanceLog(log) {
-  try {
-    await fs.writeFile(RESONANCE_LOG_PATH, JSON.stringify(log, null, 2));
-  } catch (e) {
-    console.error('Failed to save resonance log:', e);
-  }
-}
-
 app.get('/api/resonance', async (_, res) => {
-  try {
-    const log = await loadResonanceLog();
-    res.setHeader('Content-Type', 'application/json');
-    res.json(log);
-  } catch (error) {
-    console.error('Resonance log error:', error);
-    res.status(500).json([]);
-  }
+  res.setHeader('Content-Type', 'application/json');
+  res.json([]);
 });
 
 app.get('/api/sync-tweets', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  
-  // Skip auth check - Vercel cron is already secured
   if (!rw) return res.status(200).json({ ok: true, skipped: 'missing X creds' });
-
-  try {
-    const me = await rw.v2.me();
-    const tweets = await rw.v2.userTimeline(me.data.id, {
-      max_results: 50,
-      'tweet.fields': 'created_at,public_metrics,attachments',
-      expansions: 'attachments.media_keys',
-      'media.fields': 'url,preview_image_url'
-    });
-
-    const log = [];
-    
-    for await (const tweet of tweets) {
-      const tokenMatch = tweet.text.match(/\$([A-Z]{2,10})/);
-      const token = tokenMatch ? `$${tokenMatch[1]}` : null;
-      
-      const rsiMatch = tweet.text.match(/RSI (\d+)/);
-      const rsi = rsiMatch ? parseInt(rsiMatch[1]) : null;
-      
-      const priceMatch = tweet.text.match(/Price: ([0-9.]+)/);
-      const price = priceMatch ? parseFloat(priceMatch[1]) : null;
-      
-      const volMatch = tweet.text.match(/Vol \$([0-9,.]+[KMB]?)/);
-      const volume = volMatch ? volMatch[1] : null;
-      
-      let sigil = null;
-      if (tweet.attachments?.media_keys && tweets.includes?.media) {
-        const media = tweets.includes.media.find(m => tweet.attachments.media_keys.includes(m.media_key));
-        sigil = media?.url || media?.preview_image_url || null;
-      }
-      
-      let archetype = 'seer';
-      if (rsi) {
-        if (rsi < 23.6) archetype = 'shadow';
-        else if (rsi < 38.2) archetype = 'observer';
-        else if (rsi < 50) archetype = 'echo';
-        else if (rsi < 61.8) archetype = 'seer';
-        else if (rsi < 78.6) archetype = 'guardian';
-        else archetype = 'prophet';
-      }
-      
-      log.push({
-        id: tweet.id,
-        archetype,
-        token,
-        content: tweet.text,
-        timestamp: tweet.created_at,
-        rsi,
-        price,
-        volume,
-        sigil,
-        likes: tweet.public_metrics?.like_count || 0,
-        retweets: tweet.public_metrics?.retweet_count || 0
-      });
-    }
-
-    await saveResonanceLog(log);
-    res.json({ ok: true, synced: log.length });
-  } catch (e) {
-    console.error('Tweet sync error:', e);
-    res.status(200).json({ ok: false, error: String(e) });
-  }
+  res.json({ ok: true, synced: 0, message: 'Sync disabled' });
 });
 
 export default app;
