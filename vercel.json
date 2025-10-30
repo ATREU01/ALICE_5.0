@@ -8,8 +8,18 @@
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api" }
   ],
-  "crons": [{
-    "path": "/api/cron",
-    "schedule": "0 * * * *"
-  }]
+  "crons": [
+    {
+      "path": "/api/cron/post",
+      "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/cron/reply", 
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/sync-tweets",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
