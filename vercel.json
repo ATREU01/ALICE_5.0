@@ -14,10 +14,6 @@
       "schedule": "0 */12 * * *"
     },
     {
-      "path": "/api/cron/reply",
-      "schedule": "0 */6 * * *"
-    },
-    {
       "path": "/api/sync-tweets",
       "schedule": "0 */12 * * *"
     }
